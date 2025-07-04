@@ -67,7 +67,7 @@ def log_user_activity(
         action_type=action_type,
         target_type=target_type,
         target_id=target_id,
-        metadata=json.dumps(metadata) if metadata else None
+        meta_info=json.dumps(meta_info) if meta_info else None
     )
     db.add(activity)
     db.commit()

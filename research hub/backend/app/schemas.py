@@ -187,7 +187,7 @@ class UserActivityBase(BaseModel):
     action_type: str
     target_type: Optional[str] = None
     target_id: Optional[int] = None
-    metadata: Optional[str] = None
+    meta_info: Optional[str] = None
 
 class UserActivityCreate(UserActivityBase):
     """Schema for creating a user activity log."""

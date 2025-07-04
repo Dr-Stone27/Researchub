@@ -156,7 +156,7 @@ class UserActivity(Base):
     target_type = Column(String(50), nullable=True)  # research, topic, milestone, etc.
     target_id = Column(Integer, nullable=True)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow, index=True)
-    metadata = Column(String, nullable=True)  # JSON as string for extensibility
+    meta_info = Column(String, nullable=True)  # JSON as string for extensibility
     user = relationship("User", backref="activities")
 
 class Milestone(Base):
