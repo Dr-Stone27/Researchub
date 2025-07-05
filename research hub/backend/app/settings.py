@@ -3,10 +3,12 @@ from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
 from typing import List, Optional
 import os
+from dotenv import load_dotenv
+load_dotenv()  # 
  
 class Settings(BaseSettings):
     # Database
-    database_url: str = "postgresql+asyncpg://postgres:password@localhost:5432/postgres"
+    database_url: str 
 
     # JWT Auth
     jwt_secret_key: str = "supersecretkey"
