@@ -39,7 +39,7 @@ async def dashboard_user_has_draft(current_user: User = Depends(get_current_user
 
 @router.get("/feed", summary="Dashboard research feed", response_model=List[Dict[str, Any]])
 async def dashboard_feed(
-    type: str = Query("latest", regex="^(latest|trending|featured)$"),
+    type: str = Query("latest",pattern= "^(latest|trending|featured)$"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> List[Dict[str, Any]]:

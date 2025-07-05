@@ -1,35 +1,46 @@
-from pydantic import BaseSettings, AnyHttpUrl, validator
+from pydantic import AnyHttpUrl, field_validator
+from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from typing import List, Optional
 import os
-
+ 
 class Settings(BaseSettings):
-    """
-    Centralized application settings loaded from environment variables or .env file.
-    All secrets and config values should be defined here for auditability and scalability.
-    """
     # Database
-    database_url: str
+    database_url: str = "postgresql+asyncpg://postgres:password@localhost:5432/postgres"
 
     # JWT Auth
-    jwt_secret_key: str
+    jwt_secret_key: str = "supersecretkey"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
-    # Email (stub for now)
+    # Email
     email_provider: Optional[str] = None
     email_api_key: Optional[str] = None
 
     # CORS
     cors_origins: List[AnyHttpUrl] = []
 
-    class Config:
-        env_file = ".env"
+    # Consolidated configuration
+    model_config = ConfigDict(
+        extra='allow',
+        from_attributes=True,
+        env_file=".env"
+    )
 
-    @validator("jwt_secret_key", "database_url")
-    def must_not_be_default(cls, v, field):
+    @field_validator("database_url")
+    def validate_db_url(cls, v):
+        """Ensure we're using an async driver in production"""
         if os.getenv("ENV", "development") == "production":
-            if not v or v in {"supersecretkey", "postgresql+psycopg2://user:password@localhost/research_hub"}:
-                raise ValueError(f"{field.name} must be set to a secure value in production.")
+            # if "psycopg2" in v or "localhost" in v or "password" in v:
+            if True:
+
+                raise ValueError("Production database must use secure remote connection")
         return v
 
-settings = Settings() 
+    @field_validator("jwt_secret_key")
+    def validate_jwt_secret(cls, v):
+        if os.getenv("ENV", "development") == "production" and v == "supersecretkey":
+            raise ValueError("JWT secret key must be set in production")
+        return v
+
+settings = Settings()

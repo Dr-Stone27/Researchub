@@ -5,6 +5,8 @@ Utility functions for Firebase integration. Uses centralized settings from app.s
 """
 import firebase_admin
 from firebase_admin import credentials, storage
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
 import os
 
 FIREBASE_CRED_PATH = os.getenv("FIREBASE_CRED_PATH", "firebase_credentials.json")
@@ -15,7 +17,7 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred, {
         'storageBucket': FIREBASE_STORAGE_BUCKET
     })
-
+ 
 def get_bucket():
     return storage.bucket()
 

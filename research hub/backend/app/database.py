@@ -1,19 +1,33 @@
-"""
-database.py
-
-Async database setup using SQLAlchemy 2.0+ for FastAPI. Uses centralized settings for config.
-"""
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from app.settings import settings
 
-engine = create_async_engine(settings.database_url, echo=True, future=True)
-AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+# Create async engine
+engine = create_async_engine(
+    "postgresql+asyncpg://postgres:password@localhost:5432",
+    echo=True,
+    future=True,
+    pool_size=20,
+    max_overflow=10
+)
+
+# Async session factory
+AsyncSessionLocal = sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False
+)
 
 async def get_db():
-    """
-    Async dependency to provide a database session to endpoints.
-    Usage: db: AsyncSession = Depends(get_db)
-    """
+    """Async dependency to provide a database session"""
     async with AsyncSessionLocal() as session:
-        yield session 
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()

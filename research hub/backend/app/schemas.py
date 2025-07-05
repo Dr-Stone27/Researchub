@@ -5,7 +5,7 @@ Pydantic schemas for request/response validation in the Research Resource Hub ba
 Defines schemas for User, Tag, ResearchSubmission, Notification, Resource, etc.
 All fields and relationships are documented for clarity and auditability.
 """
-from pydantic import BaseModel, EmailStr, validator, root_validator, constr, Field
+from pydantic import BaseModel, EmailStr, validator, model_validator, constr, Field,field_validator
 from typing import Optional, List
 from enum import Enum
 import re
@@ -27,7 +27,7 @@ class UserBase(BaseModel):
     """Base schema for user creation and response."""
     name: str = Field(..., min_length=1)
     email: EmailStr = Field(...)
-    matric_or_faculty_id: Optional[str] = Field(None, regex=r"^\d{9}$")
+    matric_or_faculty_id: Optional[str] = Field(None, pattern=r"^\d{9}$")
     department: Optional[DepartmentEnum] = None
 
 class UserCreate(UserBase):
@@ -35,13 +35,22 @@ class UserCreate(UserBase):
     password: str = Field(...)
     confirm_password: str = Field(...)
 
-    @validator("password")
+    @field_validator("password")
     def password_strength(cls, v):
-        if len(v) < 8 or not re.search(r"[A-Z]", v) or not re.search(r"[a-z]", v) or not re.search(r"\d", v) or not re.search(r"[^A-Za-z0-9]", v):
-            raise ValueError("Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.")
+        import re
+        if (
+            len(v) < 8 or
+            not re.search(r"[A-Z]", v) or
+            not re.search(r"[a-z]", v) or
+            not re.search(r"\d", v) or
+            not re.search(r"[^A-Za-z0-9]", v)
+        ):
+            raise ValueError(
+                "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."
+            )
         return v
 
-    @root_validator
+    @model_validator(mode='after')
     def passwords_match(cls, values):
         pw, cpw = values.get("password"), values.get("confirm_password")
         if pw != cpw:

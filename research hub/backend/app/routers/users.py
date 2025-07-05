@@ -24,10 +24,6 @@ router = APIRouter()
 RATE_LIMIT = 5  # max attempts
 RATE_PERIOD = 600  # seconds (10 minutes)
 
-# Custom exception handler for field-specific errors
-@router.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    return await request_validation_exception_handler(request, exc)
 
 @router.post("/register", response_model=schemas.UserResponse)
 async def register_user(user: schemas.UserCreate, db: AsyncSession = Depends(get_db), background_tasks: BackgroundTasks = None) -> Any:
@@ -217,4 +213,4 @@ async def reset_password(token: str = Body(...), new_password: str = Body(...), 
     await db.commit()
     return {"message": "Password reset successful. You may now log in with your new password."}
 
-# User-related endpoints will be defined here 
+# User-related endpoints will be defined here

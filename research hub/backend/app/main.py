@@ -1,6 +1,10 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi.exception_handlers import request_validation_exception_handler
+
 from .routers import notifications
 from .routers import guides
 from .routers import dashboard
@@ -40,10 +44,17 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+
 # Warn if CORS is insecure in production
 env = os.getenv("ENV", "development")
 if env == "production" and (not settings.cors_origins or "*" in [str(origin) for origin in settings.cors_origins]):
     logging.warning("CORS is set to allow all origins in production! This is a security risk. Set CORS_ORIGINS to trusted domains only.")
+
+@app.exception_handler(RequestValidationError)
+async def custom_validation_exception_handler(request: Request, exc: RequestValidationError):
+    return await request_validation_exception_handler(request, exc)
+
+
 
 app.include_router(notifications.router)
 app.include_router(guides.router)
