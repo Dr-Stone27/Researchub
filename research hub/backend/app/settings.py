@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     database_url: str 
 
     # JWT Auth
-    jwt_secret_key: str 
+    jwt_secret_key: str = "supersecretkey"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     
     # SendGrid configuration
     
+    email_api_key : str
     email_sender : str  # Must be verified in SendGrid  = "olaiwonoladayo@gmail.com"
  
 
