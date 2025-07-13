@@ -21,14 +21,19 @@ async def get_user_by_matric_or_faculty_id(db: AsyncSession, matric_or_faculty_i
     result = await db.execute(select(models.User).filter(models.User.matric_or_faculty_id == matric_or_faculty_id))
     return result.scalars().first()
 
+# User CRUD
+
 async def create_user(db: AsyncSession, user: dict):
     """Asynchronously create a new user in the database."""
-    db_user = models.User(**user)
+    # Extract valid User model fields
+    valid_fields = [column.name for column in models.User.__table__.columns]
+    user_data = {key: value for key, value in user.items() if key in valid_fields}
+    
+    db_user = models.User(**user_data)
     db.add(db_user)
     await db.commit()
     await db.refresh(db_user)
     return db_user
-
 # Research Submission CRUD
 
 async def create_submission(db: AsyncSession, submission: dict, tag_ids=None):

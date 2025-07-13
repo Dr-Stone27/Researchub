@@ -7,28 +7,84 @@ All functions are documented for clarity and auditability.
 """
 # Utility functions will be defined here 
 
+from fastapi.security import OAuth2PasswordBearer
 from app.models import UserActivity, Notification
 from sqlalchemy.orm import Session
 import json
 from app.settings import settings
 import redis.asyncio as redis
+import os
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+from app.settings import settings
 
-def send_email(to: str, subject: str, body: str, attachments=None):
+
+
+
+def send_email(
+    to: str,
+    subject: str,
+    body: str,
+    attachments=None,  # Keeping signature but not using
+    is_html: bool = False,
+    **kwargs
+) -> bool:
     """
-    Abstract email sending utility.
-    Replace this stub with actual integration (e.g., SendGrid, Mailgun).
-    Uses settings.email_provider and settings.email_api_key for configuration.
+    Send email using SendGrid API (without attachments)
+    
     Args:
-        to (str): Recipient email address
-        subject (str): Email subject
-        body (str): Email body (plain text or HTML)
-        attachments (optional): List of file paths or file-like objects
+        to: Recipient email address
+        subject: Email subject
+        body: Email body (plain text or HTML)
+        attachments: Ignored (kept for compatibility)
+        is_html: True if body is HTML, False for plain text
+        
     Returns:
         bool: True if email sent successfully, False otherwise
     """
-    # TODO: Integrate with actual email service provider using settings.email_provider and settings.email_api_key
-    print(f"[Email Stub] To: {to}, Subject: {subject}, Body: {body}, Attachments: {attachments}")
-    return True 
+    # Validate configuration
+    if not settings.email_api_key:
+        print("SendGrid API key missing in configuration")
+        return False
+        
+    if not settings.email_sender:
+        print("Email sender address missing in configuration")
+        return False
+
+    try:
+        # Create Mail object with basic parameters
+        message = Mail(
+            from_email=settings.email_sender,
+            to_emails=to,
+            subject=subject
+        )
+        
+        # Set content type based on is_html flag
+        if is_html:
+            message.add_content(body, "text/html")
+        else:
+            message.add_content(body, "text/plain")
+        
+        # Initialize SendGrid client
+        sg = SendGridAPIClient(api_key=settings.email_api_key)
+        
+        # Handle EU data residency if needed
+        if getattr(settings, 'sendgrid_eu_residency', False):
+            sg.client.set_sendgrid_data_residency("eu")
+        
+        # Send email
+        response = sg.send(message)
+        
+        # Check for success (2xx status code)
+        if 200 <= response.status_code < 300:
+            return True
+        
+        print(f"SendGrid error {response.status_code}: {response.body.decode('utf-8')}")
+        return False
+    
+    except Exception as e:
+        print(f"SendGrid exception: {str(e)}")
+        return False 
 
 def search_resources(query: str):
     """

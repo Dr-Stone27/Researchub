@@ -9,6 +9,7 @@ from pydantic import BaseModel, EmailStr, validator, model_validator, constr, Fi
 from typing import Optional, List
 from enum import Enum
 import re
+from datetime import datetime  # Add datetime import
 
 # Department Enum for validation
 class DepartmentEnum(str, Enum):
@@ -52,7 +53,7 @@ class UserCreate(UserBase):
 
     @model_validator(mode='after')
     def passwords_match(cls, values):
-        pw, cpw = values.get("password"), values.get("confirm_password")
+        pw, cpw = values.password, values.confirm_password
         if pw != cpw:
             raise ValueError("Passwords do not match.")
         return values
@@ -69,10 +70,15 @@ class UserResponse(UserBase):
     is_verified: bool
     role: str
     is_first_time: bool
-    created_at: str
+    created_at: datetime  # Changed to datetime
+    updated_at: datetime  # Changed to datetime
 
-    class Config:
-        orm_mode = True 
+    # class Config:
+    #     orm_mode = True 
+
+    model_config = {
+        "from_attributes": True  # THIS enables ORM compatibility in Pydantic v2
+    }    
 
 # Tag Schemas
 class TagBase(BaseModel):
@@ -91,8 +97,8 @@ class TagResponse(TagBase):
     type: str
     status: str
     created_by: Optional[int]
-    created_at: str
-    updated_at: str
+    created_at: datetime  # Changed to datetime
+    updated_at: datetime  # Changed to datetime
 
     class Config:
         orm_mode = True
@@ -115,8 +121,8 @@ class ResearchSubmissionResponse(ResearchSubmissionBase):
     file_url: str
     status: str
     user_id: int
-    created_at: str
-    updated_at: str
+    created_at: datetime  # Changed to datetime
+    updated_at: datetime  # Changed to datetime
     user: Optional[UserResponse]
     tags: Optional[List[TagResponse]]
 
@@ -139,8 +145,8 @@ class Notification(NotificationBase):
     """Schema for notification response (includes id, read status, timestamps)."""
     id: int
     is_read: bool
-    created_at: str
-    updated_at: str
+    created_at: datetime  # Changed to datetime
+    updated_at: datetime  # Changed to datetime
 
     class Config:
         orm_mode = True
@@ -162,8 +168,8 @@ class ResourceCreate(ResourceBase):
 class Resource(ResourceBase):
     """Schema for resource response (includes id, tags, user, timestamps)."""
     id: int
-    created_at: str
-    updated_at: str
+    created_at: datetime  # Changed to datetime
+    updated_at: datetime  # Changed to datetime
     tags: Optional[List[TagResponse]]
     user: Optional[UserResponse]
 
@@ -184,8 +190,8 @@ class DraftResponse(DraftBase):
     """Schema for draft response (includes id, user, timestamps)."""
     id: int
     user_id: int
-    last_edited: str
-    created_at: str
+    last_edited: datetime  # Changed to datetime
+    created_at: datetime  # Changed to datetime
 
     class Config:
         orm_mode = True
@@ -206,7 +212,7 @@ class UserActivityResponse(UserActivityBase):
     """Schema for user activity response (includes id, user, timestamp)."""
     id: int
     user_id: int
-    timestamp: str
+    timestamp: datetime  # Changed to datetime
 
     class Config:
         orm_mode = True
@@ -226,7 +232,7 @@ class MilestoneCreate(MilestoneBase):
 class MilestoneResponse(MilestoneBase):
     """Schema for milestone response (includes id, created_at)."""
     id: int
-    created_at: str
+    created_at: datetime  # Changed to datetime
 
     class Config:
         orm_mode = True
@@ -244,8 +250,8 @@ class UserMilestoneResponse(UserMilestoneBase):
     """Schema for user milestone response (includes id, user, achieved_at, milestone details)."""
     id: int
     user_id: int
-    achieved_at: str
+    achieved_at: datetime  # Changed to datetime
     milestone: Optional[MilestoneResponse]
 
     class Config:
-        orm_mode = True 
+        orm_mode = True

@@ -16,6 +16,7 @@ import logging
 import sys
 from app.settings import settings
 import os
+from fastapi.security import OAuth2PasswordBearer
 # Sentry placeholder (uncomment and configure if needed)
 # import sentry_sdk
 # sentry_sdk.init(dsn="your_sentry_dsn_here")
@@ -33,6 +34,9 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+
+
+
 """
 Configure CORS using origins from centralized settings.
 """
@@ -43,6 +47,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+
+
+# Add this after creating the FastAPI app instance
 
 
 # Warn if CORS is insecure in production
@@ -64,6 +72,8 @@ app.include_router(tags.router)
 app.include_router(research.router)
 app.include_router(library.router)
 
+
+
 @app.get("/")
 def read_root():
     logger.info("Root endpoint accessed.")
@@ -81,3 +91,5 @@ async def generic_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled Exception: {exc} at {request.url}")
     # Optionally send to Sentry here
     return JSONResponse(status_code=500, content={"detail": "Internal server error"}) 
+
+

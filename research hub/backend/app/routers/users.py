@@ -5,11 +5,13 @@ API endpoints for user registration and authentication in the Research Resource 
 All endpoints and helper functions are async for scalability and auditability.
 """
 from fastapi import APIRouter, HTTPException, status, Depends, Body, Request, BackgroundTasks
+from sqlalchemy import select
 from app import schemas, crud, auth, models
 from app.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any
 import secrets
+
 from datetime import datetime, timedelta
 from app.utils import check_and_increment_rate_limit, send_email
 from app.settings import settings
@@ -67,60 +69,93 @@ async def register_user(user: schemas.UserCreate, db: AsyncSession = Depends(get
     background_tasks.add_task(send_email, user.email, email_subject, email_body)
     return db_user
 
+from fastapi import APIRouter, Depends, Request, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from app import auth, crud, schemas
+from app.database import get_db
+from datetime import datetime
+from fastapi import Request  
 @router.post("/login")
-async def login_user(login_data: schemas.UserLogin, db: AsyncSession = Depends(get_db), request: Request = None) -> Any:
-    """
-    Async: Authenticate a user and return a JWT token. Relies on Pydantic for validation.
-    """
-    # Redis-based rate limiting logic
-    ip = request.client.host if request else "unknown"
+async def login_user(
+      request: Request, 
+    login_data: schemas.UserLogin,
+    db: AsyncSession = Depends(get_db),
+   
+):
+    ip = request.client.host
     allowed = await check_and_increment_rate_limit(ip, RATE_LIMIT, RATE_PERIOD, settings.redis_url)
     if not allowed:
         raise HTTPException(status_code=429, detail="Too many login attempts. Please try again later.")
-    # Find user by email or matric/faculty ID
+    
     user = await crud.get_user_by_email(db, login_data.email_or_matric)
     if not user and login_data.email_or_matric:
         user = await crud.get_user_by_matric_or_faculty_id(db, login_data.email_or_matric)
     if not user:
         raise HTTPException(status_code=400, detail="Invalid credentials")
-    # Verify password
+    
     if not auth.verify_password(login_data.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid credentials")
-    # Check account status before allowing login
+    
     if not user.is_verified or not user.is_active or user.account_status != "active":
-        raise HTTPException(status_code=403, detail="Account not active or not verified. Please verify your email and ensure your account is active.")
-    # Set first_login if not already set, and always update last_login
+        raise HTTPException(status_code=403, detail="Account not active or not verified.")
+    
     if not user.first_login:
         user.first_login = datetime.utcnow()
     user.last_login = datetime.utcnow()
     await db.commit()
-    # Create JWT token
-    token = auth.create_access_token({"sub": str(user.id), "role": user.role}, token_version=user.token_version)
-    return {"token": token, "user": user, "first_login": user.first_login, "last_login": user.last_login}
 
+    token = auth.create_access_token({"sub": str(user.id), "role": user.role}, token_version=user.token_version)
+
+    return {
+        "token": token,
+        "user": schemas.UserResponse.model_validate(user),  # ✅ convert model to schema
+        "first_login": user.first_login,
+        "last_login": user.last_login
+    }
 @router.get("/verify-email")
 async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
     """
     Async: Verify a user's email using the verification token.
     Handles expired/invalid tokens and already verified accounts with clear responses.
     """
+    # Use ORM-style query to get the User object
     result = await db.execute(
-        models.User.__table__.select().where(models.User.verification_token == token)
+        select(models.User).where(models.User.verification_token == token)
     )
-    user = result.first()
+    user = result.scalar_one_or_none()  # Get the User instance or None
+    
     if not user:
-        return JSONResponse(status_code=400, content={"detail": "Invalid or expired verification link."})
-    user = user[0] if isinstance(user, tuple) else user
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "Invalid or expired verification link."}
+        )
+    
     if user.is_verified:
-        return JSONResponse(status_code=200, content={"message": "Account already verified. Please log in."})
+        return JSONResponse(
+            status_code=200,
+            content={"message": "Account already verified. Please log in."}
+        )
+    
     if not user.verification_token_expiry or user.verification_token_expiry < datetime.utcnow():
-        return JSONResponse(status_code=400, content={"detail": "Verification link has expired. Please request a new one."})
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "Verification link has expired. Please request a new one."}
+        )
+    
+    # Update the user attributes
     user.is_verified = True
     user.account_status = "active"
     user.verification_token = None
     user.verification_token_expiry = None
+    
+    # Add the modified user to the session and commit
+    db.add(user)
     await db.commit()
-    return JSONResponse(status_code=200, content={"message": "Email verified successfully. You may now log in."})
+    
+    return JSONResponse(
+        status_code=200,
+        content={"message": "Email verified successfully. You may now log in."}
+    )
 
 @router.post("/resend-verification")
 async def resend_verification(email: str = Body(..., embed=True), db: AsyncSession = Depends(get_db), background_tasks: BackgroundTasks = None):
@@ -143,7 +178,7 @@ async def resend_verification(email: str = Body(..., embed=True), db: AsyncSessi
     user.verification_token_expiry = verification_token_expiry
     await db.commit()
     # Send verification email
-    verification_link = f"https://your-domain.com/verify-email?token={verification_token}"
+    verification_link = f"http://127.0.0.1:8000/verify-email?token={verification_token}"
     email_subject = "Verify your UNILAG Research Hub account"
     email_body = f"""
     Dear {user.name},
