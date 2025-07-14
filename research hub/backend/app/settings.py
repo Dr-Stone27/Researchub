@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     )
 
     @field_validator("database_url")
-    def validate_db_url(cls, v):
+    def validate_db_url(cls, v): 
         """Ensure we're using an async driver in production"""
         # if os.getenv("ENV", "development") == "production":
             # if "psycopg2" in v or "localhost" in v or "password" in v:
