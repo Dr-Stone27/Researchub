@@ -1093,3 +1093,138 @@ FROM users
 WHERE users.id = $1::INTEGER
 2025-07-13 23:22:52,862 INFO sqlalchemy.engine.Engine [generated in 0.00231s] (7,)
 2025-07-13 23:22:52,865 INFO sqlalchemy.engine.Engine COMMIT
+2025-07-14 01:19:36,423 ERROR app.main Unhandled Exception: 'Settings' object has no attribute 'redis_url' at http://127.0.0.1:8000/login
+2025-07-14 01:20:06,767 ERROR app.main Unhandled Exception: 'Settings' object has no attribute 'redis_url' at http://127.0.0.1:8000/login
+2025-07-14 01:20:09,058 ERROR app.main Unhandled Exception: 'Settings' object has no attribute 'redis_url' at http://127.0.0.1:8000/login
+2025-07-14 01:21:26,992 INFO sqlalchemy.engine.Engine select pg_catalog.version()
+2025-07-14 01:21:26,995 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-07-14 01:21:27,088 INFO sqlalchemy.engine.Engine select current_schema()
+2025-07-14 01:21:27,092 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-07-14 01:21:27,099 INFO sqlalchemy.engine.Engine show standard_conforming_strings
+2025-07-14 01:21:27,100 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-07-14 01:21:27,104 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-07-14 01:21:27,427 INFO sqlalchemy.engine.Engine SELECT users.id, users.name, users.email, users.matric_or_faculty_id, users.department, users.password_hash, users.is_active, users.is_verified, users.verification_token, users.verification_token_expiry, users.account_status, users.role, users.first_login, users.last_login, users.password_reset_token, users.password_reset_token_expiry, users.created_at, users.updated_at, users.is_first_time, users.token_version 
+FROM users 
+WHERE users.email = $1::VARCHAR
+2025-07-14 01:21:27,429 INFO sqlalchemy.engine.Engine [generated in 0.00197s] ('adej2155@gmail.com',)
+2025-07-14 01:21:27,514 WARNING passlib.handlers.bcrypt (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\PC\Documents\Tech\Researchub\Researchub\research hub\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-07-14 01:21:28,047 INFO sqlalchemy.engine.Engine UPDATE users SET last_login=$1::TIMESTAMP WITHOUT TIME ZONE, updated_at=$2::TIMESTAMP WITHOUT TIME ZONE WHERE users.id = $3::INTEGER
+2025-07-14 01:21:28,051 INFO sqlalchemy.engine.Engine [generated in 0.00469s] (datetime.datetime(2025, 7, 14, 0, 21, 28, 42849), datetime.datetime(2025, 7, 14, 0, 21, 28, 47409), 7)
+2025-07-14 01:21:28,251 INFO sqlalchemy.engine.Engine COMMIT
+2025-07-14 01:22:38,656 ERROR app.main Unhandled Exception: module 'app.database' has no attribute 'SessionLocal' at http://127.0.0.1:8000/notifications/?user_id=7&skip=0&limit=20
+2025-07-14 01:25:40,561 ERROR app.main Unhandled Exception: 'AsyncSession' object has no attribute 'query' at http://127.0.0.1:8000/notifications/?user_id=7&skip=0&limit=20
+2025-07-14 01:28:29,926 WARNING app.main HTTPException: Missing or invalid Authorization header. (status: 401) at http://127.0.0.1:8000/notifications/?user_id=7&skip=0&limit=20
+2025-07-14 01:31:24,713 WARNING app.main HTTPException: Not authenticated (status: 403) at http://127.0.0.1:8000/api/dashboard/?user_id=7&skip=0&limit=20
+2025-07-14 01:32:05,003 INFO sqlalchemy.engine.Engine select pg_catalog.version()
+2025-07-14 01:32:05,005 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-07-14 01:32:05,023 INFO sqlalchemy.engine.Engine select current_schema()
+2025-07-14 01:32:05,024 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-07-14 01:32:05,040 INFO sqlalchemy.engine.Engine show standard_conforming_strings
+2025-07-14 01:32:05,043 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-07-14 01:32:05,051 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-07-14 01:32:05,101 INFO sqlalchemy.engine.Engine SELECT users.id, users.name, users.email, users.matric_or_faculty_id, users.department, users.password_hash, users.is_active, users.is_verified, users.verification_token, users.verification_token_expiry, users.account_status, users.role, users.first_login, users.last_login, users.password_reset_token, users.password_reset_token_expiry, users.created_at, users.updated_at, users.is_first_time, users.token_version 
+FROM users 
+WHERE users.email = $1::VARCHAR
+2025-07-14 01:32:05,103 INFO sqlalchemy.engine.Engine [generated in 0.00200s] ('adej2155@gmail.com',)
+2025-07-14 01:32:05,117 WARNING passlib.handlers.bcrypt (trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "C:\Users\PC\Documents\Tech\Researchub\Researchub\research hub\venv\Lib\site-packages\passlib\handlers\bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-07-14 01:32:05,541 INFO sqlalchemy.engine.Engine UPDATE users SET last_login=$1::TIMESTAMP WITHOUT TIME ZONE, updated_at=$2::TIMESTAMP WITHOUT TIME ZONE WHERE users.id = $3::INTEGER
+2025-07-14 01:32:05,542 INFO sqlalchemy.engine.Engine [generated in 0.00097s] (datetime.datetime(2025, 7, 14, 0, 32, 5, 538185), datetime.datetime(2025, 7, 14, 0, 32, 5, 541806), 7)
+2025-07-14 01:32:05,613 INFO sqlalchemy.engine.Engine COMMIT
+2025-07-14 01:32:27,075 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-07-14 01:32:27,078 INFO sqlalchemy.engine.Engine SELECT users.id, users.name, users.email, users.matric_or_faculty_id, users.department, users.password_hash, users.is_active, users.is_verified, users.verification_token, users.verification_token_expiry, users.account_status, users.role, users.first_login, users.last_login, users.password_reset_token, users.password_reset_token_expiry, users.created_at, users.updated_at, users.is_first_time, users.token_version 
+FROM users 
+WHERE users.id = $1::INTEGER AND users.is_active = true AND users.is_verified = true AND users.account_status = $2::VARCHAR
+2025-07-14 01:32:27,089 INFO sqlalchemy.engine.Engine [generated in 0.01145s] (7, 'active')
+2025-07-14 01:32:27,097 INFO sqlalchemy.engine.Engine SELECT notifications.id, notifications.user_id, notifications.type, notifications.message, notifications.resource_id, notifications.is_read, notifications.created_at, notifications.updated_at 
+FROM notifications 
+WHERE notifications.user_id = $1::INTEGER 
+ LIMIT $2::INTEGER OFFSET $3::INTEGER
+2025-07-14 01:32:27,100 INFO sqlalchemy.engine.Engine [generated in 0.00336s] (7, 20, 0)
+2025-07-14 01:32:27,211 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-07-14 01:32:48,940 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-07-14 01:32:48,942 INFO sqlalchemy.engine.Engine SELECT users.id, users.name, users.email, users.matric_or_faculty_id, users.department, users.password_hash, users.is_active, users.is_verified, users.verification_token, users.verification_token_expiry, users.account_status, users.role, users.first_login, users.last_login, users.password_reset_token, users.password_reset_token_expiry, users.created_at, users.updated_at, users.is_first_time, users.token_version 
+FROM users 
+WHERE users.id = $1::INTEGER AND users.is_active = true AND users.is_verified = true AND users.account_status = $2::VARCHAR
+2025-07-14 01:32:48,944 INFO sqlalchemy.engine.Engine [cached since 21.87s ago] (7, 'active')
+2025-07-14 01:32:48,953 INFO sqlalchemy.engine.Engine INSERT INTO notifications (user_id, type, message, resource_id, is_read, created_at, updated_at) VALUES ($1::INTEGER, $2::VARCHAR, $3::VARCHAR, $4::INTEGER, $5::BOOLEAN, $6::TIMESTAMP WITHOUT TIME ZONE, $7::TIMESTAMP WITHOUT TIME ZONE) RETURNING notifications.id
+2025-07-14 01:32:48,983 INFO sqlalchemy.engine.Engine [generated in 0.03032s] (7, 'string', 'string', 0, False, datetime.datetime(2025, 7, 14, 0, 32, 48, 953092), datetime.datetime(2025, 7, 14, 0, 32, 48, 953099))
+2025-07-14 01:32:49,259 INFO sqlalchemy.engine.Engine COMMIT
+2025-07-14 01:32:49,263 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-07-14 01:32:49,266 INFO sqlalchemy.engine.Engine SELECT notifications.id, notifications.user_id, notifications.type, notifications.message, notifications.resource_id, notifications.is_read, notifications.created_at, notifications.updated_at 
+FROM notifications 
+WHERE notifications.id = $1::INTEGER
+2025-07-14 01:32:49,269 INFO sqlalchemy.engine.Engine [generated in 0.00285s] (1,)
+2025-07-14 01:32:49,272 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-07-14 01:33:10,468 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-07-14 01:33:10,470 INFO sqlalchemy.engine.Engine SELECT users.id, users.name, users.email, users.matric_or_faculty_id, users.department, users.password_hash, users.is_active, users.is_verified, users.verification_token, users.verification_token_expiry, users.account_status, users.role, users.first_login, users.last_login, users.password_reset_token, users.password_reset_token_expiry, users.created_at, users.updated_at, users.is_first_time, users.token_version 
+FROM users 
+WHERE users.id = $1::INTEGER AND users.is_active = true AND users.is_verified = true AND users.account_status = $2::VARCHAR
+2025-07-14 01:33:10,473 INFO sqlalchemy.engine.Engine [cached since 43.4s ago] (7, 'active')
+2025-07-14 01:33:10,479 INFO sqlalchemy.engine.Engine SELECT notifications.id, notifications.user_id, notifications.type, notifications.message, notifications.resource_id, notifications.is_read, notifications.created_at, notifications.updated_at 
+FROM notifications 
+WHERE notifications.id = $1::INTEGER
+2025-07-14 01:33:10,534 INFO sqlalchemy.engine.Engine [generated in 0.05521s] (1,)
+2025-07-14 01:33:10,538 INFO sqlalchemy.engine.Engine UPDATE notifications SET is_read=$1::BOOLEAN, updated_at=$2::TIMESTAMP WITHOUT TIME ZONE WHERE notifications.id = $3::INTEGER
+2025-07-14 01:33:10,539 INFO sqlalchemy.engine.Engine [generated in 0.00127s] (True, datetime.datetime(2025, 7, 14, 0, 33, 10, 538578), 1)
+2025-07-14 01:33:10,542 INFO sqlalchemy.engine.Engine COMMIT
+2025-07-14 01:33:10,544 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-07-14 01:33:10,545 INFO sqlalchemy.engine.Engine SELECT notifications.id, notifications.user_id, notifications.type, notifications.message, notifications.resource_id, notifications.is_read, notifications.created_at, notifications.updated_at 
+FROM notifications 
+WHERE notifications.id = $1::INTEGER
+2025-07-14 01:33:10,552 INFO sqlalchemy.engine.Engine [cached since 21.29s ago] (1,)
+2025-07-14 01:33:10,560 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-07-14 01:33:27,310 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-07-14 01:33:27,311 INFO sqlalchemy.engine.Engine SELECT users.id, users.name, users.email, users.matric_or_faculty_id, users.department, users.password_hash, users.is_active, users.is_verified, users.verification_token, users.verification_token_expiry, users.account_status, users.role, users.first_login, users.last_login, users.password_reset_token, users.password_reset_token_expiry, users.created_at, users.updated_at, users.is_first_time, users.token_version 
+FROM users 
+WHERE users.id = $1::INTEGER AND users.is_active = true AND users.is_verified = true AND users.account_status = $2::VARCHAR
+2025-07-14 01:33:27,314 INFO sqlalchemy.engine.Engine [cached since 60.24s ago] (7, 'active')
+2025-07-14 01:33:27,317 INFO sqlalchemy.engine.Engine SELECT notifications.id, notifications.user_id, notifications.type, notifications.message, notifications.resource_id, notifications.is_read, notifications.created_at, notifications.updated_at 
+FROM notifications 
+WHERE notifications.id = $1::INTEGER
+2025-07-14 01:33:27,323 INFO sqlalchemy.engine.Engine [cached since 16.84s ago] (2,)
+2025-07-14 01:33:27,326 INFO sqlalchemy.engine.Engine ROLLBACK
+2025-07-14 01:33:27,328 WARNING app.main HTTPException: Notification not found (status: 404) at http://127.0.0.1:8000/api/dashboard/2
+2025-07-14 01:33:32,697 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-07-14 01:33:32,699 INFO sqlalchemy.engine.Engine SELECT users.id, users.name, users.email, users.matric_or_faculty_id, users.department, users.password_hash, users.is_active, users.is_verified, users.verification_token, users.verification_token_expiry, users.account_status, users.role, users.first_login, users.last_login, users.password_reset_token, users.password_reset_token_expiry, users.created_at, users.updated_at, users.is_first_time, users.token_version 
+FROM users 
+WHERE users.id = $1::INTEGER AND users.is_active = true AND users.is_verified = true AND users.account_status = $2::VARCHAR
+2025-07-14 01:33:32,724 INFO sqlalchemy.engine.Engine [cached since 65.65s ago] (7, 'active')
+2025-07-14 01:33:32,730 INFO sqlalchemy.engine.Engine SELECT notifications.id, notifications.user_id, notifications.type, notifications.message, notifications.resource_id, notifications.is_read, notifications.created_at, notifications.updated_at 
+FROM notifications 
+WHERE notifications.id = $1::INTEGER
+2025-07-14 01:33:32,732 INFO sqlalchemy.engine.Engine [cached since 22.25s ago] (1,)
+2025-07-14 01:33:32,737 INFO sqlalchemy.engine.Engine DELETE FROM notifications WHERE notifications.id = $1::INTEGER
+2025-07-14 01:33:32,739 INFO sqlalchemy.engine.Engine [generated in 0.00156s] (1,)
+2025-07-14 01:33:32,742 INFO sqlalchemy.engine.Engine COMMIT
+2025-07-14 01:33:50,272 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-07-14 01:33:50,275 INFO sqlalchemy.engine.Engine SELECT users.id, users.name, users.email, users.matric_or_faculty_id, users.department, users.password_hash, users.is_active, users.is_verified, users.verification_token, users.verification_token_expiry, users.account_status, users.role, users.first_login, users.last_login, users.password_reset_token, users.password_reset_token_expiry, users.created_at, users.updated_at, users.is_first_time, users.token_version 
+FROM users 
+WHERE users.id = $1::INTEGER
+2025-07-14 01:33:50,278 INFO sqlalchemy.engine.Engine [generated in 0.00399s] (7,)
+2025-07-14 01:33:50,283 INFO sqlalchemy.engine.Engine COMMIT
+2025-07-14 01:33:59,368 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-07-14 01:33:59,369 INFO sqlalchemy.engine.Engine SELECT users.id, users.name, users.email, users.matric_or_faculty_id, users.department, users.password_hash, users.is_active, users.is_verified, users.verification_token, users.verification_token_expiry, users.account_status, users.role, users.first_login, users.last_login, users.password_reset_token, users.password_reset_token_expiry, users.created_at, users.updated_at, users.is_first_time, users.token_version 
+FROM users 
+WHERE users.id = $1::INTEGER
+2025-07-14 01:33:59,370 INFO sqlalchemy.engine.Engine [cached since 9.096s ago] (7,)
+2025-07-14 01:33:59,373 INFO sqlalchemy.engine.Engine COMMIT
+2025-07-14 01:34:07,625 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-07-14 01:34:07,626 INFO sqlalchemy.engine.Engine SELECT users.id, users.name, users.email, users.matric_or_faculty_id, users.department, users.password_hash, users.is_active, users.is_verified, users.verification_token, users.verification_token_expiry, users.account_status, users.role, users.first_login, users.last_login, users.password_reset_token, users.password_reset_token_expiry, users.created_at, users.updated_at, users.is_first_time, users.token_version 
+FROM users 
+WHERE users.id = $1::INTEGER
+2025-07-14 01:34:07,627 INFO sqlalchemy.engine.Engine [cached since 17.35s ago] (7,)
+2025-07-14 01:34:07,631 INFO sqlalchemy.engine.Engine SELECT count(drafts.id) AS count_1 
+FROM drafts 
+WHERE drafts.user_id = $1::INTEGER AND drafts.status = $2::VARCHAR
+2025-07-14 01:34:07,632 INFO sqlalchemy.engine.Engine [generated in 0.00105s] (7, 'draft')
+2025-07-14 01:34:07,671 INFO sqlalchemy.engine.Engine COMMIT

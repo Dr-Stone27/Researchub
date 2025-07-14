@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     # email_provider: Optional[str] = None
     # email_api_key: Optional[str] = None
     
+    redis_url: Optional[str] = None  # Optional Redis URL for caching
+
     # SendGrid configuration
     
     email_api_key : str
