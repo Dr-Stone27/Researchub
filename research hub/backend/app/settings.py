@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     # SendGrid configuration
     
+    
     email_api_key : str
     email_sender : str  # Must be verified in SendGrid  = "olaiwonoladayo@gmail.com"
  

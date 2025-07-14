@@ -194,58 +194,89 @@ async def resend_verification(email: str = Body(..., embed=True), db: AsyncSessi
     return {"message": "Verification email resent. Please check your inbox."}
 
 @router.post("/forgot-password")
-async def forgot_password(email: str = Body(..., embed=True), db: AsyncSession = Depends(get_db), background_tasks: BackgroundTasks = None):
-    """
-    Async: Initiate password reset: generate a secure, time-limited token and email a reset link if the user exists.
-    Always return a generic success message for security.
-    """
+async def forgot_password(
+    email: str = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+    background_tasks: BackgroundTasks = None
+):
     user = await crud.get_user_by_email(db, email)
     if user:
-        import secrets
-        from datetime import datetime, timedelta
-        reset_token = secrets.token_urlsafe(32)
-        reset_expiry = datetime.utcnow() + timedelta(hours=1)
-        user.password_reset_token = reset_token
+        # Generate 6-digit numeric code
+        reset_code = ''.join(secrets.choice('0123456789') for _ in range(6))
+        reset_expiry = datetime.utcnow() + timedelta(minutes=10)  # Shorter expiry
+        
+        # Store in database
+        user.password_reset_token = reset_code
         user.password_reset_token_expiry = reset_expiry
         await db.commit()
-        # Send reset email
-        reset_link = f"https://your-domain.com/reset-password?token={reset_token}"
-        email_subject = "Reset your UNILAG Research Hub password"
+        
+        # Prepare email with code
+        email_subject = "UNILAG Research Hub Password Reset Code"
         email_body = f"""
         Dear {user.name},
 
-        You requested a password reset. Click the link below to set a new password:
-        {reset_link}
+        Your password reset verification code is:
+        {reset_code}
 
-        This link will expire in 1 hour. If you did not request this, please ignore this email.
+        This code will expire in 10 minutes. If you didn't request this, please ignore this email.
+
+        Regards,
+        UNILAG Research Hub Team
         """
+        
         background_tasks.add_task(send_email, user.email, email_subject, email_body)
-    # Always return a generic message
-    return {"message": "If an account with that email exists, a password reset link has been sent."}
+    
+    return {"message": "If an account exists with this email, a verification code has been sent."}
+
 
 @router.post("/reset-password")
-async def reset_password(token: str = Body(...), new_password: str = Body(...), confirm_password: str = Body(...), db: AsyncSession = Depends(get_db)):
+async def reset_password(
+    token: str = Body(..., embed=True),  # Now holds the 6-digit code
+    new_password: str = Body(..., embed=True),
+    confirm_password: str = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db)
+):
     """
-    Async: Reset password using a valid reset token. Validates token, expiry, and password strength.
+    Async: Reset password using a valid 6-digit reset code.
+    Validates code, expiry, and password strength.
     """
-    # Find user by reset token
+    # Find user by reset code
     from sqlalchemy import select
-    result = await db.execute(select(models.User).filter(models.User.password_reset_token == token))
+    result = await db.execute(
+        select(models.User).filter(models.User.password_reset_token == token)
+    )
     user = result.scalars().first()
+    
+    # Validate code and expiry
     if not user or not user.password_reset_token_expiry or user.password_reset_token_expiry < datetime.utcnow():
-        return JSONResponse(status_code=400, content={"detail": "Invalid or expired reset token."})
-    # Password match and strength validation
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "Invalid or expired verification code."}
+        )
+    
+    # Password validation (unchanged)
     if new_password != confirm_password:
-        return JSONResponse(status_code=400, content={"detail": {"confirm_password": "Passwords do not match."}})
-    if len(new_password) < 8 or not re.search(r"[A-Z]", new_password) or not re.search(r"[a-z]", new_password) or not re.search(r"\d", new_password) or not re.search(r"[^A-Za-z0-9]", new_password):
-        return JSONResponse(status_code=400, content={"detail": {"new_password": "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."}})
-    # Update password
+        return JSONResponse(
+            status_code=400,
+            content={"detail": {"confirm_password": "Passwords do not match."}}
+        )
+    if len(new_password) < 8 or \
+       not re.search(r"[A-Z]", new_password) or \
+       not re.search(r"[a-z]", new_password) or \
+       not re.search(r"\d", new_password) or \
+       not re.search(r"[^A-Za-z0-9]", new_password):
+        return JSONResponse(
+            status_code=400,
+            content={"detail": {"new_password": "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."}}
+        )
+    
+    # Update password and clear reset code
     from app.auth import hash_password
     user.password_hash = hash_password(new_password)
-    user.password_reset_token = None
-    user.password_reset_token_expiry = None
-    user.token_version += 1  # Invalidate all existing JWTs
+    user.password_reset_token = None  # Clear reset code
+    user.password_reset_token_expiry = None  # Clear expiry
+    user.token_version += 1  # Invalidate existing JWTs
     await db.commit()
+    
     return {"message": "Password reset successful. You may now log in with your new password."}
-
 # User-related endpoints will be defined here
