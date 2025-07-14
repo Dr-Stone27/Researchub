@@ -5,6 +5,7 @@ Async business logic and database operations for the Research Resource Hub backe
 Defines CRUD functions for users, research submissions, tags, notifications, and resources.
 All functions are async and use AsyncSession for auditability and scalability.
 """
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app import models
@@ -108,26 +109,48 @@ async def reject_tag(db: AsyncSession, tag_id: int):
     return tag
 
 # Resource CRUD
+from sqlalchemy.orm import selectinload
 
 async def create_resource(db: AsyncSession, resource: dict, tag_ids=None):
-    """Asynchronously create a new resource (guide, template, etc.), optionally linking tags."""
+    """Create resource with eager loading of tags"""
+    user = await db.get(models.User, resource["created_by"])
+    if not user:
+        raise HTTPException(
+            status_code=400,
+            detail=f"User {resource['created_by']} does not exist"
+        )
+    
     db_resource = models.Resource(**resource)
     if tag_ids:
-        result = await db.execute(select(models.Tag).filter(models.Tag.id.in_(tag_ids)))
+        result = await db.execute(
+            select(models.Tag).filter(models.Tag.id.in_(tag_ids))
+        )
         db_resource.tags = result.scalars().all()
     db.add(db_resource)
     await db.commit()
-    await db.refresh(db_resource)
+    
+    # Refresh and eager load tags
+    await db.refresh(db_resource, attribute_names=["tags"])
     return db_resource
+from sqlalchemy.orm import selectinload
 
 async def get_resource_by_id(db: AsyncSession, resource_id: int):
-    """Asynchronously retrieve a resource by its ID."""
-    result = await db.execute(select(models.Resource).filter(models.Resource.id == resource_id))
+    """Retrieve resource with eager loading of tags and user"""
+    result = await db.execute(
+        select(models.Resource)
+        .options(
+            selectinload(models.Resource.tags),
+            selectinload(models.Resource.user)  # eagerly load user here too
+        )
+        .filter(models.Resource.id == resource_id)
+    )
     return result.scalars().first()
 
 async def list_resources(db: AsyncSession, type: str = None, tag_id: int = None, skip: int = 0, limit: int = 20):
-    """Asynchronously list resources, optionally filtering by type or tag, with pagination."""
-    query = select(models.Resource)
+    query = select(models.Resource).options(
+        selectinload(models.Resource.tags),
+        selectinload(models.Resource.user)  # eagerly load the user relationship
+    )
     if type:
         query = query.filter(models.Resource.type == type)
     if tag_id:
@@ -136,17 +159,32 @@ async def list_resources(db: AsyncSession, type: str = None, tag_id: int = None,
     return result.scalars().all()
 
 async def update_resource(db: AsyncSession, resource_id: int, updates: dict, tag_ids=None):
-    """Asynchronously update a resource by its ID, optionally updating tags."""
-    resource = await get_resource_by_id(db, resource_id)
+    """Update resource with eager loading of tags"""
+    if "created_by" in updates:
+        del updates["created_by"]
+        
+    # Get resource with tags loaded
+    result = await db.execute(
+        select(models.Resource)
+        .options(selectinload(models.Resource.tags))
+        .filter(models.Resource.id == resource_id)
+    )
+    resource = result.scalars().first()
+    
     if not resource:
         return None
+        
     for key, value in updates.items():
         setattr(resource, key, value)
+        
     if tag_ids is not None:
-        result = await db.execute(select(models.Tag).filter(models.Tag.id.in_(tag_ids)))
+        result = await db.execute(
+            select(models.Tag).filter(models.Tag.id.in_(tag_ids))
+        )
         resource.tags = result.scalars().all()
+        
     await db.commit()
-    await db.refresh(resource)
+    await db.refresh(resource, attribute_names=["tags"])
     return resource
 
 async def delete_resource(db: AsyncSession, resource_id: int):
@@ -156,4 +194,4 @@ async def delete_resource(db: AsyncSession, resource_id: int):
         return None
     await db.delete(resource)
     await db.commit()
-    return resource 
+    return resource

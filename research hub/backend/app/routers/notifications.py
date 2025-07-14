@@ -12,7 +12,7 @@ from app.database import AsyncSessionLocal
 
 router = APIRouter(
     prefix="/api/notifications",
-    tags=["notifications"]
+    tags=["Notifications"]
 )
 
 oauth2_scheme = HTTPBearer(auto_error=True)
