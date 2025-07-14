@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app import models
-
+from sqlalchemy.orm import selectinload
 # User CRUD
 
 async def get_user_by_email(db: AsyncSession, email: str):
@@ -48,14 +48,27 @@ async def create_submission(db: AsyncSession, submission: dict, tag_ids=None):
     await db.refresh(db_submission)
     return db_submission
 
+
+
 async def get_submission_by_id(db: AsyncSession, submission_id: int):
-    """Asynchronously retrieve a research submission by its ID."""
-    result = await db.execute(select(models.ResearchSubmission).filter(models.ResearchSubmission.id == submission_id))
+    result = await db.execute(
+        select(models.ResearchSubmission)
+        .options(selectinload(models.ResearchSubmission.tags))
+        .filter(models.ResearchSubmission.id == submission_id)
+    )
     return result.scalars().first()
 
+# in crud.py
+
+
 async def list_submissions(db: AsyncSession):
-    """Asynchronously list all research submissions."""
-    result = await db.execute(select(models.ResearchSubmission))
+    result = await db.execute(
+        select(models.ResearchSubmission)
+        .options(
+            selectinload(models.ResearchSubmission.user),
+            selectinload(models.ResearchSubmission.tags),
+        )
+    )
     return result.scalars().all()
 
 # Tag CRUD

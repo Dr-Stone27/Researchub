@@ -7,6 +7,7 @@ All functions are documented for clarity and auditability.
 """
 # Utility functions will be defined here 
 
+from typing import List, Optional
 from fastapi.security import OAuth2PasswordBearer
 from app.models import UserActivity, Notification
 from sqlalchemy.orm import Session
@@ -123,7 +124,7 @@ def log_user_activity(
         action_type=action_type,
         target_type=target_type,
         target_id=target_id,
-        meta_info=json.dumps(meta_info) if meta_info else None
+        meta_info = json.dumps(metadata) if metadata else None
     )
     db.add(activity)
     db.commit()
@@ -170,3 +171,17 @@ async def check_and_increment_rate_limit(ip: str, limit: int, period: int, redis
     if count > limit:
         return False
     return True 
+
+from fastapi import HTTPException
+
+def parse_tag_ids(tag_ids: Optional[str]) -> Optional[List[int]]:
+    if not tag_ids:
+        return None
+    tag_id_list = []
+    for tid in tag_ids.split(","):
+        tid = tid.strip()
+        if tid.isdigit():
+            tag_id_list.append(int(tid))
+        else:
+            raise HTTPException(status_code=400, detail=f"Invalid tag id: {tid}")
+    return tag_id_list

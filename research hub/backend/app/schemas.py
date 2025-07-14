@@ -102,6 +102,7 @@ class TagResponse(TagBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True
 
 # Research Submission Schemas
 class ResearchSubmissionBase(BaseModel):
@@ -127,6 +128,7 @@ class ResearchSubmissionResponse(ResearchSubmissionBase):
     tags: Optional[List[TagResponse]]
 
     class Config:
+        from_attributes = True
         orm_mode = True 
 
 # Notification Schemas

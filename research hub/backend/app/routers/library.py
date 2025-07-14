@@ -7,6 +7,7 @@ All endpoints and helper functions are async for scalability and auditability.
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app import models, schemas
 from typing import List, Optional, Any
@@ -29,7 +30,13 @@ async def browse_library(
     """
     Async: Browse research submissions with advanced filters and pagination.
     """
-    query = select(models.ResearchSubmission)
+    # Base query with eager loading for relationships
+    query = select(models.ResearchSubmission).options(
+        selectinload(models.ResearchSubmission.user),
+        selectinload(models.ResearchSubmission.tags)
+    )
+    
+    # Apply filters
     if department:
         query = query.join(models.User).filter(models.User.department == department)
     if year:
@@ -41,9 +48,11 @@ async def browse_library(
     if tag_ids:
         tag_id_list = [int(tid) for tid in tag_ids.split(",")]
         query = query.join(models.ResearchSubmission.tags).filter(models.Tag.id.in_(tag_id_list))
+    
     # Pagination
     offset = (page - 1) * limit
     query = query.offset(offset).limit(limit)
+    
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -62,14 +71,21 @@ async def search_library(
     """
     Async: Full-text search for research submissions with filters and pagination.
     """
-    query = select(models.ResearchSubmission)
-    # Basic full-text search on title, abstract, supervisor
+    # Base query with eager loading for relationships
+    query = select(models.ResearchSubmission).options(
+        selectinload(models.ResearchSubmission.user),
+        selectinload(models.ResearchSubmission.tags)
+    )
+    
+    # Full-text search
     search = f"%{q}%"
     query = query.filter(
         (models.ResearchSubmission.title.ilike(search)) |
         (models.ResearchSubmission.abstract.ilike(search)) |
         (models.ResearchSubmission.supervisor.ilike(search))
     )
+    
+    # Apply filters
     if department:
         query = query.join(models.User).filter(models.User.department == department)
     if year:
@@ -81,9 +97,11 @@ async def search_library(
     if tag_ids:
         tag_id_list = [int(tid) for tid in tag_ids.split(",")]
         query = query.join(models.ResearchSubmission.tags).filter(models.Tag.id.in_(tag_id_list))
+    
     # Pagination
     offset = (page - 1) * limit
     query = query.offset(offset).limit(limit)
+    
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -99,7 +117,8 @@ async def download_submission(submission_id: int, db: AsyncSession = Depends(get
     file_url = submission.file_url
     if not file_url:
         raise HTTPException(status_code=404, detail="File not found")
-    # Notify uploader if download milestone is reached (e.g., every 10 downloads)
+    
+    # Track downloads and notify at milestones
     download_count_result = await db.execute(
         select(models.UserActivity).filter(
             models.UserActivity.action_type == "download",
@@ -108,6 +127,15 @@ async def download_submission(submission_id: int, db: AsyncSession = Depends(get
         )
     )
     download_count = len(download_count_result.scalars().all())
+    
+    # Notify uploader every 10 downloads
     if submission.user_id and download_count > 0 and download_count % 10 == 0:
-        await create_notification(db, submission.user_id, f"Your research '{submission.title}' has been downloaded {download_count} times!", "download", resource_id=submission_id)
-    return RedirectResponse(url=file_url) 
+        await create_notification(
+            db, 
+            submission.user_id, 
+            f"Your research '{submission.title}' has been downloaded {download_count} times!", 
+            "download", 
+            resource_id=submission_id
+        )
+    
+    return RedirectResponse(url=file_url)
