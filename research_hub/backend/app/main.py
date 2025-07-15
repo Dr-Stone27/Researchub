@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 from app.database import engine
-from app.models import Base
+from app.models import Base 
 
 @app.on_event("startup")
 async def on_startup():
