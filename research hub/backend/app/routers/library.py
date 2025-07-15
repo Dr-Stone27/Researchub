@@ -4,7 +4,7 @@ library.py
 API endpoints for browsing, searching, and downloading research submissions in the Research Resource Hub backend.
 All endpoints and helper functions are async for scalability and auditability.
 """
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -15,7 +15,6 @@ from fastapi.responses import RedirectResponse
 from app.utils import create_notification
 
 router = APIRouter()
-
 @router.get("/library/browse", response_model=List[schemas.ResearchSubmissionResponse])
 async def browse_library(
     department: Optional[str] = None,
@@ -27,9 +26,6 @@ async def browse_library(
     limit: int = 10,
     db: AsyncSession = Depends(get_db)
 ) -> Any:
-    """
-    Async: Browse research submissions with advanced filters and pagination.
-    """
     # Base query with eager loading for relationships
     query = select(models.ResearchSubmission).options(
         selectinload(models.ResearchSubmission.user),
@@ -45,9 +41,21 @@ async def browse_library(
         query = query.filter(models.ResearchSubmission.supervisor.ilike(f"%{supervisor}%"))
     if status:
         query = query.filter(models.ResearchSubmission.status == status)
+    
+    # FIXED: Handle tag_ids safely
     if tag_ids:
-        tag_id_list = [int(tid) for tid in tag_ids.split(",")]
-        query = query.join(models.ResearchSubmission.tags).filter(models.Tag.id.in_(tag_id_list))
+        try:
+            # Parse comma-separated integers
+            tag_id_list = []
+            for tid in tag_ids.split(","):
+                if tid.strip().isdigit():
+                    tag_id_list.append(int(tid))
+            
+            if tag_id_list:
+                query = query.join(models.ResearchSubmission.tags).filter(models.Tag.id.in_(tag_id_list))
+        except ValueError:
+            # Log error but don't fail the entire request
+            logger.warning(f"Invalid tag_ids parameter: {tag_ids}")
     
     # Pagination
     offset = (page - 1) * limit
@@ -55,7 +63,6 @@ async def browse_library(
     
     result = await db.execute(query)
     return result.scalars().all()
-
 @router.get("/library/search", response_model=List[schemas.ResearchSubmissionResponse])
 async def search_library(
     q: str,
