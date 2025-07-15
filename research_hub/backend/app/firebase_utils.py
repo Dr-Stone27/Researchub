@@ -3,15 +3,35 @@ firebase_utils.py
 
 Utility functions for Firebase integration. Uses centralized settings from app.settings for any config or secrets.
 """
+
+from fastapi import UploadFile
 import firebase_admin
 from firebase_admin import credentials, storage
-from dotenv import load_dotenv
-load_dotenv()  # Load environment variables from .env file
-from starlette.datastructures import UploadFile
 import os
+import json
+from dotenv import load_dotenv
 
-FIREBASE_CRED_PATH = os.getenv("FIREBASE_CRED_PATH", "firebase_credentials.json")
+load_dotenv()  # Load env variables from .env file (local dev)
+
+# Instead of file path, load JSON string from env var
+firebase_creds_json = os.getenv("FIREBASE_CREDENTIALS_JSON")
+
+if firebase_creds_json:
+    firebase_creds_dict = json.loads(firebase_creds_json)
+    cred = credentials.Certificate(firebase_creds_dict)
+else:
+    # fallback: load from local file (for local dev)
+    FIREBASE_CRED_PATH = os.getenv("FIREBASE_CRED_PATH", "firebase_credentials.json")
+    cred = credentials.Certificate(FIREBASE_CRED_PATH)
+
 FIREBASE_STORAGE_BUCKET = os.getenv("FIREBASE_STORAGE_BUCKET", "your-bucket-name")
+
+# Initialize Firebase app if not already initialized
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred, {
+        'storageBucket': FIREBASE_STORAGE_BUCKET
+    })
+
 
 if not firebase_admin._apps:
     cred = credentials.Certificate(FIREBASE_CRED_PATH)
