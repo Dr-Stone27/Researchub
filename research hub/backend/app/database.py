@@ -1,10 +1,11 @@
+import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from .settings import settings
 
 # Create async engine
 engine = create_async_engine(
-    "postgresql+asyncpg://postgres:password@localhost:5432",
+ settings.database_url,
     echo=True,
     future=True,
     pool_size=20,
