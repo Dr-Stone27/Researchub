@@ -14,7 +14,7 @@ router = APIRouter(
     prefix="/api/notifications",
     tags=["Notifications"]
 )
-
+ 
 oauth2_scheme = HTTPBearer(auto_error=True)
 
 # Dependency: async DB session
