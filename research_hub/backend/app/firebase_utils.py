@@ -14,7 +14,8 @@ from dotenv import load_dotenv
 load_dotenv()  # Load env variables from .env file (local dev)
 
 # Instead of file path, load JSON string from env var
-firebase_creds_json = os.getenv("FIREBASE_CREDENTIALS_JSON")
+
+firebase_creds_json = os.getenv("FIREBASE_CRED_PATH")
 
 if firebase_creds_json:
     firebase_creds_dict = json.loads(firebase_creds_json)
