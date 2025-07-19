@@ -30,8 +30,9 @@ RATE_PERIOD = 600  # seconds (10 minutes)
 @router.post("/register", response_model=schemas.UserResponse)
 async def register_user(
     user: schemas.UserCreate,
+     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    background_tasks: BackgroundTasks
+   
 ) -> Any:
     if await crud.get_user_by_email(db, user.email):
         raise HTTPException(status_code=400, detail={"email": "This email is already registered."})
