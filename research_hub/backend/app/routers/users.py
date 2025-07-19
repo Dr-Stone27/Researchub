@@ -28,7 +28,7 @@ RATE_PERIOD = 600  # seconds (10 minutes)
 
 
 @router.post("/register", response_model=schemas.UserResponse)
-async def register_user(user: schemas.UserCreate, db: AsyncSession = Depends(get_db), background_tasks: BackgroundTasks) -> Any:
+async def register_user(user: schemas.UserCreate,background_tasks: BackgroundTasks) -> Any, db: AsyncSession = Depends(get_db):
     """
     Async: Register a new user. Relies on Pydantic for validation.
     """
