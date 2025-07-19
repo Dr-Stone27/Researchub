@@ -31,7 +31,7 @@ RATE_PERIOD = 600  # seconds (10 minutes)
 async def register_user(
     user: schemas.UserCreate,
     db: AsyncSession = Depends(get_db),
-    background_tasks: BackgroundTasks  # ✅ required, no default
+    background_tasks: BackgroundTasks
 ) -> Any:
     if await crud.get_user_by_email(db, user.email):
         raise HTTPException(status_code=400, detail={"email": "This email is already registered."})
@@ -52,7 +52,10 @@ async def register_user(
         "account_status": "pending_verification"
     })
 
+    # Create user and commit transaction
     db_user = await crud.create_user(db, user_dict)
+    await db.commit()  # ✅ Commit the transaction
+    await db.refresh(db_user)  # ✅ Refresh to load database defaults
 
     verification_link = f"https://researchub-3zyb.onrender.com/verify-email?token={verification_token}"
     email_subject = "Verify your UNILAG Research Hub account"
@@ -68,9 +71,10 @@ async def register_user(
     If you did not register, please ignore this email.
     """
     
-    print("✅ Queuing background email task...")
     background_tasks.add_task(send_email, user.email, email_subject, email_body)
-    return schemas.UserResponse.from_orm(db_user)
+    
+    # Use Pydantic's model_validate for proper serialization
+    return schemas.UserResponse.model_validate(db_user)
 
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
