@@ -28,31 +28,32 @@ RATE_PERIOD = 600  # seconds (10 minutes)
 
 
 @router.post("/register", response_model=schemas.UserResponse)
-async def register_user(user: schemas.UserCreate,background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)) -> Any:
-    """
-    Async: Register a new user. Relies on Pydantic for validation.
-    """
-    # Duplicate registration checks
+async def register_user(
+    user: schemas.UserCreate,
+    db: AsyncSession = Depends(get_db),
+    background_tasks: BackgroundTasks  # ✅ required, no default
+) -> Any:
     if await crud.get_user_by_email(db, user.email):
-        return JSONResponse(status_code=400, content={"detail": {"email": "This email is already registered."}})
+        raise HTTPException(status_code=400, detail={"email": "This email is already registered."})
+    
     if user.matric_or_faculty_id and await crud.get_user_by_matric_or_faculty_id(db, user.matric_or_faculty_id):
-        return JSONResponse(status_code=400, content={"detail": {"matric_or_faculty_id": "This Matric Number/Faculty ID is already registered."}})
-    # Hash password
+        raise HTTPException(status_code=400, detail={"matric_or_faculty_id": "This Matric Number/Faculty ID is already registered."})
+
     hashed_password = auth.hash_password(user.password)
     user_dict = user.dict()
     user_dict.pop("password")
     user_dict["password_hash"] = hashed_password
-    # Generate verification token and expiry
     verification_token = secrets.token_urlsafe(32)
     verification_token_expiry = datetime.utcnow() + timedelta(hours=24)
-    user_dict["verification_token"] = verification_token
-    user_dict["verification_token_expiry"] = verification_token_expiry
-    user_dict["is_verified"] = False
-    # Set account status to pending_verification on registration
-    user_dict["account_status"] = "pending_verification"
-    # Create user
+    user_dict.update({
+        "verification_token": verification_token,
+        "verification_token_expiry": verification_token_expiry,
+        "is_verified": False,
+        "account_status": "pending_verification"
+    })
+
     db_user = await crud.create_user(db, user_dict)
-    # Send verification email
+
     verification_link = f"https://researchub-3zyb.onrender.com/verify-email?token={verification_token}"
     email_subject = "Verify your UNILAG Research Hub account"
     email_body = f"""
@@ -66,8 +67,10 @@ async def register_user(user: schemas.UserCreate,background_tasks: BackgroundTas
 
     If you did not register, please ignore this email.
     """
+    
+    print("✅ Queuing background email task...")
     background_tasks.add_task(send_email, user.email, email_subject, email_body)
-    return db_user
+    return schemas.UserResponse.from_orm(db_user)
 
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
