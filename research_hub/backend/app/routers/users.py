@@ -53,7 +53,7 @@ async def register_user(user: schemas.UserCreate, db: AsyncSession = Depends(get
     # Create user
     db_user = await crud.create_user(db, user_dict)
     # Send verification email
-    verification_link = f"https://your-domain.com/verify-email?token={verification_token}"
+    verification_link = f"https://researchub-3zyb.onrender.com/verify-email?token={verification_token}"
     email_subject = "Verify your UNILAG Research Hub account"
     email_body = f"""
     Dear {user.name},
@@ -178,7 +178,7 @@ async def resend_verification(email: str = Body(..., embed=True), db: AsyncSessi
     user.verification_token_expiry = verification_token_expiry
     await db.commit()
     # Send verification email
-    verification_link = f"https://your-domain.com/verify-email?token={verification_token}"
+    verification_link = f"https://researchub-3zyb.onrender.com/verify-email?token={verification_token}"
     email_subject = "Verify your UNILAG Research Hub account"
     email_body = f"""
     Dear {user.name},
