@@ -241,7 +241,7 @@ async def forgot_password(
 async def reset_password(
     token: str = Body(..., embed=True),  # Now holds the 6-digit code
     new_password: str = Body(..., embed=True),
-    confirm_password: str = Body(..., embed=True),
+   
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -263,7 +263,7 @@ async def reset_password(
         )
     
     # Password validation (unchanged)
-    if new_password != confirm_password:
+    if new_password:
         return JSONResponse(
             status_code=400,
             content={"detail": {"confirm_password": "Passwords do not match."}}
