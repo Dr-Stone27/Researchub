@@ -19,6 +19,8 @@ import re
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.exception_handlers import request_validation_exception_handler
+import os
+FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 router = APIRouter()
 
@@ -58,7 +60,7 @@ async def register_user(
     await db.commit()  # ✅ Commit the transaction
     await db.refresh(db_user)  # ✅ Refresh to load database defaults
 
-    verification_link = f"https://researchub-3zyb.onrender.com/verify-email?token={verification_token}"
+    verification_link = f"{FRONTEND_URL}?token={verification_token}"
     email_subject = "Verify your UNILAG Research Hub account"
     email_body = f"""
     Dear {user.name},
@@ -186,7 +188,7 @@ async def resend_verification(email: str = Body(..., embed=True), db: AsyncSessi
     user.verification_token_expiry = verification_token_expiry
     await db.commit()
     # Send verification email
-    verification_link = f"https://researchub-3zyb.onrender.com/verify-email?token={verification_token}"
+    verification_link = f"{FRONTEND_URL}?token={verification_token}"
     email_subject = "Verify your UNILAG Research Hub account"
     email_body = f"""
     Dear {user.name},
