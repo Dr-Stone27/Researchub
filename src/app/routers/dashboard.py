@@ -268,7 +268,7 @@ async def dashboard_user_milestones(
     
     return result
 
-@router.get("/user/drafts-pending", summary="User drafts and pending submissions", response_model=List[Dict[str, Any]])
+@router.get("/user/drafts-pending", summary="User drafts and pending submissions", response_model=List[schemas.DraftResponse])
 async def dashboard_user_drafts_pending(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
