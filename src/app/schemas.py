@@ -257,3 +257,40 @@ class UserMilestoneResponse(UserMilestoneBase):
 
     class Config:
         orm_mode = True
+
+class DashboardFeedItem(BaseModel):
+    id: int
+    title: str
+    authors: List[str]
+    department: Optional[str]
+    tags: List[str]
+    is_featured: bool
+    created_at: Optional[datetime]
+    summary: str
+
+
+class DashboardUserStats(BaseModel):
+    topics_explored: int
+    papers_read: int
+    papers_uploaded: int
+    total_downloads: int
+    profile_views: int
+
+class DashboardUserMilestone(BaseModel):
+    milestone_id: int
+    name: str
+    description: str
+    badge_url: Optional[str]
+    achieved: bool
+    progress: int
+    target: int
+    achieved_at: Optional[datetime]
+
+
+class DashboardUserDraftPending(BaseModel):
+    id: int
+    title: str
+    status: str
+    last_edited: Optional[datetime]
+    is_draft: bool
+

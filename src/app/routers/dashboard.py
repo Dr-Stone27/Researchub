@@ -4,7 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.auth import get_current_user
 from app.models import (
-    User, Draft, ResearchSubmission, Tag, UserActivity, Milestone, UserMilestone, Notification, Resource
+    User, Draft, ResearchSubmission, Tag, UserActivity, Milestone,
+      UserMilestone, Notification, Resource,DashboardFeedItem,
+    DashboardUserStats,DashboardUserDraftPending,DashboardUserMilestone
+
 )
 from app.database import get_db
 from datetime import datetime, timedelta
@@ -57,7 +60,7 @@ async def dashboard_user_has_draft(
     count = result.scalar()
     return {"has_draft": count > 0}
 
-@router.get("/feed", summary="Dashboard research feed", response_model=List[Dict[str, Any]])
+@router.get("/feed", summary="Dashboard research feed", response_model=List[DashboardFeedItem])
 async def dashboard_feed(
     type: str = Query("latest", pattern="^(latest|trending|featured)$"),
     db: AsyncSession = Depends(get_db),
@@ -141,7 +144,7 @@ async def dashboard_feed(
     
     return feed
 
-@router.get("/user/stats", summary="User discovery and impact stats", response_model=Dict[str, int])
+@router.get("/user/stats", summary="User discovery and impact stats", response_model=DashboardUserStats)
 async def dashboard_user_stats(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -202,7 +205,7 @@ async def dashboard_user_stats(
         "profile_views": profile_views
     }
 
-@router.get("/user/milestones", summary="User milestone progress", response_model=List[Dict[str, Any]])
+@router.get("/user/milestones", summary="User milestone progress", response_model=List[DashboardUserMilestone])
 async def dashboard_user_milestones(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -268,7 +271,7 @@ async def dashboard_user_milestones(
     
     return result
 
-@router.get("/user/drafts-pending", summary="User drafts and pending submissions", response_model=List[schemas.DraftResponse])
+@router.get("/user/drafts-pending", summary="User drafts and pending submissions", response_model=List[DashboardUserDraftPending])
 async def dashboard_user_drafts_pending(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -311,7 +314,7 @@ async def dashboard_user_drafts_pending(
     
     return sorted(result, key=lambda x: x["last_edited"] or "", reverse=True)
 
-@router.get("/user/notifications-latest", summary="Latest user notifications", response_model=List[Dict[str, Any]])
+@router.get("/user/notifications-latest", summary="Latest user notifications", response_model=List[Notification])
 async def dashboard_user_notifications_latest(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -338,7 +341,7 @@ async def dashboard_user_notifications_latest(
         for n in notifications
     ]
 
-@router.get("/resources", summary="Dashboard academic resources", response_model=List[Dict[str, Any]])
+@router.get("/resources", summary="Dashboard academic resources", response_model=List[Resource])
 async def dashboard_resources(
     db: AsyncSession = Depends(get_db),
     token: str = Depends(oauth2_scheme)  # Add security dependency
