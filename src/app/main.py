@@ -69,12 +69,14 @@ async def custom_validation_exception_handler(request: Request, exc: RequestVali
 
 
 
-app.include_router(notifications.router,tags=["notifications"])
-app.include_router(guides.router,  tags=["guides"])
+app.include_router(notifications.router,prefix="/api/notifications",
+    tags=["Notifications"])
+app.include_router(guides.router, prefix="/resources",
+    tags=["Resources"])
 app.include_router(dashboard.router , tags=["dashboard"])
 app.include_router(users.router, tags=["users"])
 app.include_router(tags.router , tags=["tags"])
-app.include_router(research.router, tags=["research"])
+app.include_router(research.router, tags=["Research Submission & Review"])
 app.include_router(library.router, tags=["library"])
 
 

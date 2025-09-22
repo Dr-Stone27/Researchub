@@ -10,8 +10,7 @@ from app.auth import verify_access_token
 from app.database import AsyncSessionLocal
 
 router = APIRouter(
-    prefix="/resources",
-    tags=["Resources"]
+    
 )
 
 oauth2_scheme = HTTPBearer(auto_error=True)

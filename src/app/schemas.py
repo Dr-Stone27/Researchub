@@ -294,3 +294,47 @@ class DashboardUserDraftPending(BaseModel):
     last_edited: Optional[datetime]
     is_draft: bool
 
+class ReviewAction(str, Enum):
+    APPROVE = "approve"
+    REJECT = "reject"
+    REVISION = "revision"
+
+
+class ReviewBase(BaseModel):
+    comments: str
+    action: ReviewAction
+
+class ReviewCreate(ReviewBase):
+    submission_id: int
+    reviewer_id: int
+
+class ReviewResponse(ReviewBase):
+    id: int
+    submission_id: int
+    reviewer_id: int
+    reviewer_name: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class SubmissionWithReviewsResponse(BaseModel):
+    submission: ResearchSubmissionResponse
+    previous_reviews: List[ReviewResponse]
+    
+    class Config:
+        from_attributes = True
+
+class PendingSubmissionItem(BaseModel):
+    submission_id: int
+    title: str
+    abstract: str
+    year: int
+    supervisor: Optional[str]
+    user_name: str
+    department: Optional[str]
+    tags: List[TagResponse]
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True

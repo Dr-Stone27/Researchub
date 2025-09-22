@@ -5,14 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import distinct
 
-from app import schemas
+from .. import schemas
 from .. import models
 from app.auth import verify_access_token
 from app.database import AsyncSessionLocal
 
 router = APIRouter(
-    prefix="/api/notifications",
-    tags=["Notifications"]
+    
 )
 
 oauth2_scheme = HTTPBearer(auto_error=True)

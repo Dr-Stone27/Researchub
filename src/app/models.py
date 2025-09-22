@@ -184,3 +184,21 @@ class UserMilestone(Base):
     achieved_at = Column(DateTime, default=datetime.datetime.utcnow)
     user = relationship("User", backref="user_milestones")
     milestone = relationship("Milestone", backref="user_milestones") 
+
+
+class Review(Base):
+    """
+    Review model: represents faculty reviews of research submissions.
+    """
+    __tablename__ = "reviews"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    submission_id = Column(Integer, ForeignKey("research_submissions.id"), nullable=False)
+    reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    action = Column(String(20), nullable=False)  # approve, reject, revision
+    comments = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    
+    submission = relationship("ResearchSubmission", backref="reviews")
+    reviewer = relationship("User", backref="reviews")    
