@@ -338,3 +338,13 @@ class PendingSubmissionItem(BaseModel):
     
     class Config:
         from_attributes = True
+
+class NotificationBulkUpdate(BaseModel):
+    """Schema for bulk updating notifications (mark as read/unread)."""
+    notification_ids: List[int] = Field(..., description="List of notification IDs to update")
+    is_read: bool = Field(..., description="Mark as read (True) or unread (False)")
+
+class NotificationBulkUpdateResponse(BaseModel):
+    """Schema for bulk update response."""
+    updated_count: int = Field(..., description="Number of notifications successfully updated")
+    failed_ids: List[int] = Field(default=[], description="List of notification IDs that failed to update")

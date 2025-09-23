@@ -109,3 +109,62 @@ async def delete_notification(
     await db.delete(notif)
     await db.commit()
     return None
+
+
+# Enhanced bulk update endpoint with individual validation
+@router.patch("/bulk-read", response_model=schemas.NotificationBulkUpdateResponse)
+async def bulk_mark_as_read_enhanced(
+    bulk_update: schemas.NotificationBulkUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+) -> schemas.NotificationBulkUpdateResponse:
+    """
+    Bulk mark multiple notifications as read or unread with enhanced validation.
+    """
+    if not bulk_update.notification_ids:
+        return schemas.NotificationBulkUpdateResponse(
+            updated_count=0,
+            failed_ids=[]
+        )
+    
+    # Remove duplicates
+    unique_ids = list(set(bulk_update.notification_ids))
+    
+    try:
+        # Verify notifications exist and belong to the current user
+        stmt = select(models.Notification).where(
+            models.Notification.id.in_(unique_ids)
+        )
+        result = await db.execute(stmt)
+        notifications = result.scalars().all()
+        
+        # Separate valid and invalid notifications
+        valid_notifications = []
+        failed_ids = []
+        
+        notification_dict = {notif.id: notif for notif in notifications}
+        
+        for nid in unique_ids:
+            notification = notification_dict.get(nid)
+            if notification and notification.user_id == current_user.id:
+                valid_notifications.append(notification)
+            else:
+                failed_ids.append(nid)
+        
+        # Update valid notifications
+        for notification in valid_notifications:
+            notification.is_read = bulk_update.is_read
+        
+        await db.commit()
+        
+        return schemas.NotificationBulkUpdateResponse(
+            updated_count=len(valid_notifications),
+            failed_ids=failed_ids
+        )
+        
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to bulk update notifications: {str(e)}"
+        )

@@ -15,7 +15,37 @@ from fastapi.responses import RedirectResponse
 from app.utils import create_notification
 
 router = APIRouter()
-@router.get("/library/browse", response_model=List[schemas.ResearchSubmissionResponse])
+
+
+
+@router.get("/library/browse", response_model=List[schemas.ResearchSubmissionResponse])@router.get("/library/{submission_id}", response_model=schemas.ResearchSubmissionResponse)
+async def get_submission_detail(
+    submission_id: int,
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """
+    Async: Get detailed information about a single research submission by ID.
+    """
+    # Query with eager loading for all relationships
+    query = select(models.ResearchSubmission).options(
+        selectinload(models.ResearchSubmission.user),
+        selectinload(models.ResearchSubmission.tags)
+    ).filter(models.ResearchSubmission.id == submission_id)
+    
+    result = await db.execute(query)
+    submission = result.scalars().first()
+    
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    
+    # Only return approved submissions (or allow admins to see all)
+    if submission.status != "approved":
+        # In a real implementation, you might want to check user permissions here
+        # For now, we'll only return approved submissions to all users
+        raise HTTPException(status_code=404, detail="Submission not found or not approved")
+    
+    return submission
+
 async def browse_library(
     department: Optional[str] = None,
     year: Optional[int] = None,
