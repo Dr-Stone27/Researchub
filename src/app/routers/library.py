@@ -16,9 +16,7 @@ from app.utils import create_notification
 
 router = APIRouter()
 
-
-
-@router.get("/library/browse", response_model=List[schemas.ResearchSubmissionResponse])@router.get("/library/{submission_id}", response_model=schemas.ResearchSubmissionResponse)
+@router.get("/library/{submission_id}", response_model=schemas.ResearchSubmissionResponse)
 async def get_submission_detail(
     submission_id: int,
     db: AsyncSession = Depends(get_db)
@@ -46,6 +44,8 @@ async def get_submission_detail(
     
     return submission
 
+
+@router.get("/library/browse", response_model=List[schemas.ResearchSubmissionResponse])
 async def browse_library(
     department: Optional[str] = None,
     year: Optional[int] = None,
