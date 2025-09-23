@@ -290,3 +290,100 @@ async def reset_password(
     
     return {"message": "Password reset successful. You may now log in with your new password."}
 # User-related endpoints will be defined here
+
+@router.get("/{user_id}", response_model=schemas.UserResponse)
+async def get_user_profile(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+) -> Any:
+    """
+    Get user profile by ID.
+    Users can only view their own profile, unless they're admin.
+    """
+    # Check permissions
+    if current_user.id != user_id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only view your own profile"
+        )
+    
+    # Get user from database
+    result = await db.execute(
+        select(models.User).where(models.User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return schemas.UserResponse.model_validate(user)
+
+
+@router.post("/{user_id}", response_model=schemas.UserResponse)
+async def update_user_profile(
+    user_id: int,
+    user_update: schemas.UserBase,  # Using UserBase since it has the fields we want to allow updating
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+) -> Any:
+    """
+    Update user profile information.
+    Users can only update their own profile.
+    """
+    # Check permissions
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only update your own profile"
+        )
+    
+    # Get user from database
+    result = await db.execute(
+        select(models.User).where(models.User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Check if email is being changed and if it's already taken
+    if user_update.email != user.email:
+        existing_user = await crud.get_user_by_email(db, user_update.email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"email": "This email is already registered."}
+            )
+    
+    # Check if matric/faculty ID is being changed and if it's already taken
+    if (user_update.matric_or_faculty_id and 
+        user_update.matric_or_faculty_id != user.matric_or_faculty_id):
+        existing_user = await crud.get_user_by_matric_or_faculty_id(db, user_update.matric_or_faculty_id)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"matric_or_faculty_id": "This Matric Number/Faculty ID is already registered."}
+            )
+    
+    # Update user fields
+    update_data = user_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(user, field, value)
+    
+    user.updated_at = datetime.utcnow()
+    
+    # Mark user as no longer first time if they're updating their profile
+    if user.is_first_time:
+        user.is_first_time = False
+    
+    await db.commit()
+    await db.refresh(user)
+    
+    return schemas.UserResponse.model_validate(user)
