@@ -30,6 +30,19 @@ class UserBase(BaseModel):
     email: EmailStr = Field(...)
     matric_or_faculty_id: Optional[str] = Field(None, pattern=r"^\d{9}$")
     department: Optional[DepartmentEnum] = None
+    # Optional profile fields that can be updated later
+    bio: Optional[str] = Field(None, max_length=500, description="User biography")
+    phone_number: Optional[str] = Field(None, pattern=r"^\+?[\d\s\-\(\)]+$", description="Phone number")
+    linkedin_url: Optional[str] = Field(None, description="LinkedIn profile URL")
+    # research_interests: Optional[List[str]] = Field(default=[], description="Areas of research interest")
+    google_scholar_url: Optional[str] = Field(None, description="Google Scholar profile URL")
+    researchgate_url: Optional[str] = Field(None, description="ResearchGate profile URL")
+    academic_level: Optional[str] = Field(None, description="Academic level (undergraduate, graduate, faculty)")
+    graduation_year: Optional[int] = Field(None, ge=1900, description="Expected/actual graduation year")
+    resume_url: Optional[str] = Field(None, description="URL to the user's resume")
+    resume_filename: Optional[str] = Field(None, description="Original filename of the uploaded resume")
+    resume_updated_at: Optional[datetime] = Field(None, description="Timestamp of the last resume update")
+    profile_picture_url: Optional[str] = Field(None, description="URL to the user's profile picture")
 
 class UserCreate(UserBase):
     """Schema for user registration (includes password and confirm_password)."""
@@ -348,3 +361,34 @@ class NotificationBulkUpdateResponse(BaseModel):
     """Schema for bulk update response."""
     updated_count: int = Field(..., description="Number of notifications successfully updated")
     failed_ids: List[int] = Field(default=[], description="List of notification IDs that failed to update")
+    
+class ResumeUploadResponse(BaseModel):
+    """Schema for resume upload response."""
+    message: str
+    resume_url: str
+    filename: str
+
+class ResumeDeleteResponse(BaseModel):
+    """Schema for resume delete response."""
+    message: str
+    
+class ResumeUpdateResponse(BaseModel):
+    """Schema for resume update response."""
+    message: str
+    resume_url: str
+    filename: str
+    updated_at: datetime
+    
+class ResumeDownloadResponse(BaseModel):
+    """Schema for resume download response."""
+    resume_url: Optional[str]
+    filename: Optional[str]
+    updated_at: Optional[datetime]
+
+class ResumeInfoResponse(BaseModel):
+    """Schema for resume information response."""
+    has_resume: bool
+    filename: Optional[str]
+    uploaded_at: Optional[datetime]
+    max_file_size: str
+    allowed_formats: List[str]

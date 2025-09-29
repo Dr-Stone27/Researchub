@@ -56,6 +56,18 @@ class User(Base):
     # notifications and resources: see backrefs in Notification/Resource
     is_first_time = Column(Boolean, default=True)  # Tracks if user is a first-time user for onboarding
     token_version = Column(Integer, default=0)  # For JWT token revocation/versioning
+    resume_url = Column(String(500), nullable=True)  # URL to user's uploaded resume: 500 chars max for URL
+    resume_filename = Column(String(255), nullable=True)  # Original filename of the uploaded resume
+    resume_updated_at = Column(DateTime, nullable=True)  # Timestamp of last resume
+    bio = Column(Text, nullable=True)  # User bio or profile description
+    profile_picture_url = Column(String(500), nullable=True)  # URL to profile picture
+    profile_picture_updated_at = Column(DateTime, nullable=True)  # Timestamp of last profile picture update
+    linkedin_url = Column(String(255), nullable=True)  # URL to LinkedIn profile
+    phone_number = Column(String(20), nullable=True)  # Contact phone number
+    academic_level = Column(String(50), nullable=True)  # e.g., Undergraduate, Masters, PhD
+    graduation_year = Column(Integer, nullable=True)  # Expected graduation year
+    research_gate_url = Column(String(255), nullable=True)  # URL to ResearchGate profile
+    
 
 class ResearchSubmission(Base):
     """
