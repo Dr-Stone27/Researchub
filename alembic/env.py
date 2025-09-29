@@ -1,8 +1,13 @@
 from logging.config import fileConfig
 
 # Import create_async_engine for explicit async engine creation
-from sqlalchemy.ext.asyncio import create_async_engine # <<<--- IMPORTANT CHANGE HERE ---
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncConnection # <<<--- IMPORTANT CHANGE HERE ---
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+)  # <<<--- IMPORTANT CHANGE HERE ---
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncConnection,
+)  # <<<--- IMPORTANT CHANGE HERE ---
 from sqlalchemy import pool
 
 from alembic import context
@@ -14,14 +19,16 @@ import sys
 # Assuming 'alembic' folder is at the project root level, and your models
 # are in 'backend/app/models.py', your Base is in 'backend/app/database.py'.
 current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.join(current_dir, '..')
+project_root = os.path.join(current_dir, "..")
 sys.path.insert(0, project_root)
 
-# Now import your Base and models from their correct paths
 # Adjust these imports to match your exact file structure
-# Base is typically defined in database.py, not models.py
-from backend.app.models import Base # <<<--- IMPORTANT CHANGE HERE ---
-from backend.app import models # Assuming your models (like User) are defined in models.py
+# Now import your Base and models from their correct paths
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from app.models import Base
+from app import models
 
 
 # this is the Alembic Config object, which provides
@@ -36,13 +43,15 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 # This is crucial: Alembic needs to know about your model definitions
-target_metadata = Base.metadata # <<<--- IMPORTANT CHANGE HERE ---
+target_metadata = Base.metadata  # <<<--- IMPORTANT CHANGE HERE ---
 
 # Set the database URL dynamically or explicitly here.
 # Replace with your actual PostgreSQL connection string.
 # Example: "postgresql+asyncpg://user:password@localhost:5432/mydatabase"
 # You've already set this in your provided code, keeping it as is.
-config.set_main_option("sqlalchemy.url", "postgresql+asyncpg://postgres:password@localhost:5432/postgres")
+config.set_main_option(
+    "sqlalchemy.url", "postgresql+asyncpg://postgres:password@localhost:5432/postgres"
+)
 
 
 def run_migrations_offline() -> None:
@@ -74,7 +83,7 @@ def do_run_migrations(connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
-        compare_type=True # Good for autogenerate to detect type changes
+        compare_type=True,  # Good for autogenerate to detect type changes
     )
 
     with context.begin_transaction():
@@ -93,9 +102,9 @@ async def run_migrations_online() -> None:
 
     # Explicitly create an AsyncEngine
     # This is the key change to ensure an async engine is used
-    connectable: AsyncEngine = create_async_engine( # <<<--- IMPORTANT CHANGE HERE ---
+    connectable: AsyncEngine = create_async_engine(  # <<<--- IMPORTANT CHANGE HERE ---
         connectable_url,
-        poolclass=pool.NullPool, # Use NullPool for migrations
+        poolclass=pool.NullPool,  # Use NullPool for migrations
     )
 
     # Use async context manager for the connection
@@ -110,4 +119,5 @@ if context.is_offline_mode():
 else:
     # This is still necessary to run the async function in a sync context
     import asyncio
+
     asyncio.run(run_migrations_online())
