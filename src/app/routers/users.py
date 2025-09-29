@@ -4,7 +4,9 @@ users.py
 API endpoints for user registration and authentication in the Research Resource Hub backend.
 All endpoints and helper functions are async for scalability and auditability.
 """
+
 from fastapi import APIRouter, HTTPException, status, Depends, Body, Request, BackgroundTasks
+
 from sqlalchemy import select
 from app import schemas, crud, auth, models
 from app.database import get_db
@@ -20,6 +22,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.exception_handlers import request_validation_exception_handler
 import os
+
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 router = APIRouter()
@@ -32,15 +35,23 @@ RATE_PERIOD = 600  # seconds (10 minutes)
 @router.post("/register", response_model=schemas.UserResponse)
 async def register_user(
     user: schemas.UserCreate,
-     background_tasks: BackgroundTasks,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-   
 ) -> Any:
     if await crud.get_user_by_email(db, user.email):
-        raise HTTPException(status_code=400, detail={"email": "This email is already registered."})
-    
-    if user.matric_or_faculty_id and await crud.get_user_by_matric_or_faculty_id(db, user.matric_or_faculty_id):
-        raise HTTPException(status_code=400, detail={"matric_or_faculty_id": "This Matric Number/Faculty ID is already registered."})
+        raise HTTPException(
+            status_code=400, detail={"email": "This email is already registered."}
+        )
+
+    if user.matric_or_faculty_id and await crud.get_user_by_matric_or_faculty_id(
+        db, user.matric_or_faculty_id
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "matric_or_faculty_id": "This Matric Number/Faculty ID is already registered."
+            },
+        )
 
     hashed_password = auth.hash_password(user.password)
     user_dict = user.dict()
@@ -73,55 +84,61 @@ async def register_user(
 
     If you did not register, please ignore this email.
     """
-    
+
     background_tasks.add_task(send_email, user.email, email_subject, email_body)
-    
+
     # Use Pydantic's model_validate for proper serialization
     return schemas.UserResponse.model_validate(db_user)
 
-from fastapi import APIRouter, Depends, Request, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from app import auth, crud, schemas
-from app.database import get_db
-from datetime import datetime
-from fastapi import Request  
+
 @router.post("/login")
 async def login_user(
-      request: Request, 
+    request: Request,
     login_data: schemas.UserLogin,
     db: AsyncSession = Depends(get_db),
-   
 ):
     ip = request.client.host
-    allowed = await check_and_increment_rate_limit(ip, RATE_LIMIT, RATE_PERIOD, settings.redis_url)
+    allowed = await check_and_increment_rate_limit(
+        ip, RATE_LIMIT, RATE_PERIOD, settings.redis_url
+    )
     if not allowed:
-        raise HTTPException(status_code=429, detail="Too many login attempts. Please try again later.")
-    
+        raise HTTPException(
+            status_code=429, detail="Too many login attempts. Please try again later."
+        )
+
     user = await crud.get_user_by_email(db, login_data.email_or_matric)
     if not user and login_data.email_or_matric:
-        user = await crud.get_user_by_matric_or_faculty_id(db, login_data.email_or_matric)
+        user = await crud.get_user_by_matric_or_faculty_id(
+            db, login_data.email_or_matric
+        )
     if not user:
         raise HTTPException(status_code=400, detail="Invalid credentials")
-    
+
     if not auth.verify_password(login_data.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Invalid credentials")
-    
+
     if not user.is_verified or not user.is_active or user.account_status != "active":
-        raise HTTPException(status_code=403, detail="Account not active or not verified.")
-    
+        raise HTTPException(
+            status_code=403, detail="Account not active or not verified."
+        )
+
     if not user.first_login:
         user.first_login = datetime.utcnow()
     user.last_login = datetime.utcnow()
     await db.commit()
 
-    token = auth.create_access_token({"sub": str(user.id), "role": user.role}, token_version=user.token_version)
+    token = auth.create_access_token(
+        {"sub": str(user.id), "role": user.role}, token_version=user.token_version
+    )
 
     return {
         "token": token,
         "user": schemas.UserResponse.model_validate(user),  # ✅ convert model to schema
         "first_login": user.first_login,
-        "last_login": user.last_login
+        "last_login": user.last_login,
     }
+
+
 @router.get("/verify-email")
 async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
     """
@@ -133,42 +150,51 @@ async def verify_email(token: str, db: AsyncSession = Depends(get_db)):
         select(models.User).where(models.User.verification_token == token)
     )
     user = result.scalar_one_or_none()  # Get the User instance or None
-    
+
     if not user:
         return JSONResponse(
-            status_code=400,
-            content={"detail": "Invalid or expired verification link."}
+            status_code=400, content={"detail": "Invalid or expired verification link."}
         )
-    
+
     if user.is_verified:
         return JSONResponse(
             status_code=200,
-            content={"message": "Account already verified. Please log in."}
+            content={"message": "Account already verified. Please log in."},
         )
-    
-    if not user.verification_token_expiry or user.verification_token_expiry < datetime.utcnow():
+
+    if (
+        not user.verification_token_expiry
+        or user.verification_token_expiry < datetime.utcnow()
+    ):
         return JSONResponse(
             status_code=400,
-            content={"detail": "Verification link has expired. Please request a new one."}
+            content={
+                "detail": "Verification link has expired. Please request a new one."
+            },
         )
-    
+
     # Update the user attributes
     user.is_verified = True
     user.account_status = "active"
     user.verification_token = None
     user.verification_token_expiry = None
-    
+
     # Add the modified user to the session and commit
     db.add(user)
     await db.commit()
-    
+
     return JSONResponse(
         status_code=200,
-        content={"message": "Email verified successfully. You may now log in."}
+        content={"message": "Email verified successfully. You may now log in."},
     )
 
+
 @router.post("/resend-verification")
-async def resend_verification(email: str = Body(..., embed=True), db: AsyncSession = Depends(get_db), background_tasks: BackgroundTasks = None):
+async def resend_verification(
+    email: str = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+    background_tasks: BackgroundTasks = None,
+):
     """
     Async: Resend the verification email to a user who is not yet verified.
     Args:
@@ -187,6 +213,7 @@ async def resend_verification(email: str = Body(..., embed=True), db: AsyncSessi
     user.verification_token = verification_token
     user.verification_token_expiry = verification_token_expiry
     await db.commit()
+    print(f"Resent verification token for {email}: {verification_token}" )
     # Send verification email
     verification_link = f"{FRONTEND_URL}?token={verification_token}"
     email_subject = "Verify your UNILAG Research Hub account"
@@ -203,23 +230,24 @@ async def resend_verification(email: str = Body(..., embed=True), db: AsyncSessi
     background_tasks.add_task(send_email, user.email, email_subject, email_body)
     return {"message": "Verification email resent. Please check your inbox."}
 
+
 @router.post("/forgot-password")
 async def forgot_password(
     email: str = Body(..., embed=True),
     db: AsyncSession = Depends(get_db),
-    background_tasks: BackgroundTasks = None
+    background_tasks: BackgroundTasks = None,
 ):
     user = await crud.get_user_by_email(db, email)
     if user:
         # Generate 6-digit numeric code
-        reset_code = ''.join(secrets.choice('0123456789') for _ in range(6))
+        reset_code = "".join(secrets.choice("0123456789") for _ in range(6))
         reset_expiry = datetime.utcnow() + timedelta(minutes=10)  # Shorter expiry
-        
+
         # Store in database
         user.password_reset_token = reset_code
         user.password_reset_token_expiry = reset_expiry
         await db.commit()
-        
+
         # Prepare email with code
         email_subject = "UNILAG Research Hub Password Reset Code"
         email_body = f"""
@@ -233,18 +261,19 @@ async def forgot_password(
         Regards,
         UNILAG Research Hub Team
         """
-        
+
         background_tasks.add_task(send_email, user.email, email_subject, email_body)
-    
-    return {"message": "If an account exists with this email, a verification code has been sent."}
+
+    return {
+        "message": "If an account exists with this email, a verification code has been sent."
+    }
 
 
 @router.post("/reset-password")
 async def reset_password(
     token: str = Body(..., embed=True),  # Now holds the 6-digit code
     new_password: str = Body(..., embed=True),
-   
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Async: Reset password using a valid 6-digit reset code.
@@ -252,44 +281,60 @@ async def reset_password(
     """
     # Find user by reset code
     from sqlalchemy import select
+
     result = await db.execute(
         select(models.User).filter(models.User.password_reset_token == token)
     )
     user = result.scalars().first()
-    
+
     # Validate code and expiry
-    if not user or not user.password_reset_token_expiry or user.password_reset_token_expiry < datetime.utcnow():
+    if (
+        not user
+        or not user.password_reset_token_expiry
+        or user.password_reset_token_expiry < datetime.utcnow()
+    ):
         return JSONResponse(
-            status_code=400,
-            content={"detail": "Invalid or expired verification code."}
+            status_code=400, content={"detail": "Invalid or expired verification code."}
         )
-    
+
     # Password validation (unchanged)
     if new_password:
         return JSONResponse(
             status_code=400,
-            content={"detail": {"confirm_password": "Passwords do not match."}}
+            content={"detail": {"confirm_password": "Passwords do not match."}},
         )
-    if len(new_password) < 8 or \
-       not re.search(r"[A-Z]", new_password) or \
-       not re.search(r"[a-z]", new_password) or \
-       not re.search(r"\d", new_password) or \
-       not re.search(r"[^A-Za-z0-9]", new_password):
+    if (
+        len(new_password) < 8
+        or not re.search(r"[A-Z]", new_password)
+        or not re.search(r"[a-z]", new_password)
+        or not re.search(r"\d", new_password)
+        or not re.search(r"[^A-Za-z0-9]", new_password)
+    ):
         return JSONResponse(
             status_code=400,
-            content={"detail": {"new_password": "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."}}
+            content={
+                "detail": {
+                    "new_password": "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."
+                }
+            },
         )
-    
+
     # Update password and clear reset code
     from app.auth import hash_password
+
     user.password_hash = hash_password(new_password)
     user.password_reset_token = None  # Clear reset code
     user.password_reset_token_expiry = None  # Clear expiry
     user.token_version += 1  # Invalidate existing JWTs
     await db.commit()
-    
-    return {"message": "Password reset successful. You may now log in with your new password."}
+
+    return {
+        "message": "Password reset successful. You may now log in with your new password."
+    }
+
+
 # User-related endpoints will be defined here
+
 
 @router.get("/{user_id}", response_model=schemas.UserResponse)
 async def get_user_profile(
@@ -307,19 +352,16 @@ async def get_user_profile(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only view your own profile"
         )
-    
+
     # Get user from database
-    result = await db.execute(
-        select(models.User).where(models.User.id == user_id)
-    )
+    result = await db.execute(select(models.User).where(models.User.id == user_id))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
-    
+
     return schemas.UserResponse.model_validate(user)
 
 
@@ -340,19 +382,16 @@ async def update_user_profile(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only update your own profile"
         )
-    
+
     # Get user from database
-    result = await db.execute(
-        select(models.User).where(models.User.id == user_id)
-    )
+    result = await db.execute(select(models.User).where(models.User.id == user_id))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
-    
+
     # Check if email is being changed and if it's already taken
     if user_update.email != user.email:
         existing_user = await crud.get_user_by_email(db, user_update.email)
@@ -361,29 +400,35 @@ async def update_user_profile(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={"email": "This email is already registered."}
             )
-    
+
     # Check if matric/faculty ID is being changed and if it's already taken
-    if (user_update.matric_or_faculty_id and 
-        user_update.matric_or_faculty_id != user.matric_or_faculty_id):
-        existing_user = await crud.get_user_by_matric_or_faculty_id(db, user_update.matric_or_faculty_id)
+    if (
+        user_update.matric_or_faculty_id
+        and user_update.matric_or_faculty_id != user.matric_or_faculty_id
+    ):
+        existing_user = await crud.get_user_by_matric_or_faculty_id(
+            db, user_update.matric_or_faculty_id
+        )
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"matric_or_faculty_id": "This Matric Number/Faculty ID is already registered."}
+                detail={
+                    "matric_or_faculty_id": "This Matric Number/Faculty ID is already registered."
+                },
             )
-    
+
     # Update user fields
     update_data = user_update.dict(exclude_unset=True)
     for field, value in update_data.items():
         setattr(user, field, value)
-    
+
     user.updated_at = datetime.utcnow()
-    
+
     # Mark user as no longer first time if they're updating their profile
     if user.is_first_time:
         user.is_first_time = False
-    
+
     await db.commit()
     await db.refresh(user)
-    
+
     return schemas.UserResponse.model_validate(user)
