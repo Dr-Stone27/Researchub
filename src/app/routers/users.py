@@ -5,7 +5,15 @@ API endpoints for user registration and authentication in the Research Resource 
 All endpoints and helper functions are async for scalability and auditability.
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends, Body, Request, BackgroundTasks
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    status,
+    Depends,
+    Body,
+    Request,
+    BackgroundTasks,
+)
 
 from sqlalchemy import select
 from app import schemas, crud, auth, models
@@ -59,12 +67,14 @@ async def register_user(
     user_dict["password_hash"] = hashed_password
     verification_token = secrets.token_urlsafe(32)
     verification_token_expiry = datetime.utcnow() + timedelta(hours=24)
-    user_dict.update({
-        "verification_token": verification_token,
-        "verification_token_expiry": verification_token_expiry,
-        "is_verified": False,
-        "account_status": "pending_verification"
-    })
+    user_dict.update(
+        {
+            "verification_token": verification_token,
+            "verification_token_expiry": verification_token_expiry,
+            "is_verified": False,
+            "account_status": "pending_verification",
+        }
+    )
 
     # Create user and commit transaction
     db_user = await crud.create_user(db, user_dict)
@@ -213,7 +223,7 @@ async def resend_verification(
     user.verification_token = verification_token
     user.verification_token_expiry = verification_token_expiry
     await db.commit()
-    print(f"Resent verification token for {email}: {verification_token}" )
+    print(f"Resent verification token for {email}: {verification_token}")
     # Send verification email
     verification_link = f"{FRONTEND_URL}?token={verification_token}"
     email_subject = "Verify your UNILAG Research Hub account"
@@ -340,7 +350,7 @@ async def reset_password(
 async def get_user_profile(
     user_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_user)
+    current_user: models.User = Depends(auth.get_current_user),
 ) -> Any:
     """
     Get user profile by ID.
@@ -350,7 +360,7 @@ async def get_user_profile(
     if current_user.id != user_id and current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only view your own profile"
+            detail="You can only view your own profile",
         )
 
     # Get user from database
@@ -365,22 +375,23 @@ async def get_user_profile(
     return schemas.UserResponse.model_validate(user)
 
 
-@router.post("/{user_id}", response_model=schemas.UserResponse)
+@router.patch("/{user_id}", response_model=schemas.UserResponse)
 async def update_user_profile(
     user_id: int,
-    user_update: schemas.UserBase,  # Using UserBase since it has the fields we want to allow updating
+    user_update: schemas.UserProfileUpdate,  # ✅ Using dedicated schema for partial updates
     db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_user)
+    current_user: models.User = Depends(auth.get_current_user),
 ) -> Any:
     """
-    Update user profile information.
+    Update user profile information (partial updates).
     Users can only update their own profile.
+    Only fields provided in the request will be updated.
     """
     # Check permissions
     if current_user.id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only update your own profile"
+            detail="You can only update your own profile",
         )
 
     # Get user from database
@@ -393,12 +404,12 @@ async def update_user_profile(
         )
 
     # Check if email is being changed and if it's already taken
-    if user_update.email != user.email:
+    if user_update.email is not None and user_update.email != user.email:
         existing_user = await crud.get_user_by_email(db, user_update.email)
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"email": "This email is already registered."}
+                detail={"email": "This email is already registered."},
             )
 
     # Check if matric/faculty ID is being changed and if it's already taken
@@ -418,7 +429,7 @@ async def update_user_profile(
             )
 
     # Update user fields
-    update_data = user_update.dict(exclude_unset=True)
+    update_data = user_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(user, field, value)
 

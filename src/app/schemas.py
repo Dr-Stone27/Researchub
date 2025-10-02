@@ -1,16 +1,25 @@
 """
 schemas.py
+Pydantic schemas for request/response validation
+"""
 
-Pydantic schemas for request/response validation in the Research Resource Hub backend.
+"""
 Defines schemas for User, Tag, ResearchSubmission, Notification, Resource, etc.
 All fields and relationships are documented for clarity and auditability.
 """
+
+
 from pydantic import BaseModel, EmailStr, validator, model_validator, constr, Field,field_validator
 from typing import Optional, List
 from enum import Enum
 import re
 from datetime import datetime  # Add datetime import
 
+
+class UserLogin(BaseModel):
+    """Schema for user login (by email or matric/faculty ID)."""
+    email_or_matric: str = Field(..., min_length=1)
+    password: str = Field(...)
 # Department Enum for validation
 class DepartmentEnum(str, Enum):
     civil = "Civil Engineering"
@@ -36,13 +45,29 @@ class UserBase(BaseModel):
     linkedin_url: Optional[str] = Field(None, description="LinkedIn profile URL")
     # research_interests: Optional[List[str]] = Field(default=[], description="Areas of research interest")
     google_scholar_url: Optional[str] = Field(None, description="Google Scholar profile URL")
-    researchgate_url: Optional[str] = Field(None, description="ResearchGate profile URL")
+    research_gate_url: Optional[str] = Field(None, description="ResearchGate profile URL")
     academic_level: Optional[str] = Field(None, description="Academic level (undergraduate, graduate, faculty)")
     graduation_year: Optional[int] = Field(None, ge=1900, description="Expected/actual graduation year")
     resume_url: Optional[str] = Field(None, description="URL to the user's resume")
     resume_filename: Optional[str] = Field(None, description="Original filename of the uploaded resume")
     resume_updated_at: Optional[datetime] = Field(None, description="Timestamp of the last resume update")
     profile_picture_url: Optional[str] = Field(None, description="URL to the user's profile picture")
+    
+
+class UserProfileUpdate(BaseModel):
+    """Schema for partial user profile updates (PATCH operations)."""
+    name: Optional[str] = Field(None, min_length=1)
+    email: Optional[EmailStr] = None
+    matric_or_faculty_id: Optional[str] = Field(None, pattern=r"^\d{9}$")
+    department: Optional[DepartmentEnum] = None
+    bio: Optional[str] = Field(None, max_length=500)
+    phone_number: Optional[str] = Field(None, pattern=r"^\+?[\d\s\-\(\)]+$")
+    linkedin_url: Optional[str] = None
+    google_scholar_url: Optional[str] = None
+    research_gate_url: Optional[str] = None
+    academic_level: Optional[str] = None
+    graduation_year: Optional[int] = Field(None, ge=1900)
+    profile_picture_url: Optional[str] = None
 
 class UserCreate(UserBase):
     """Schema for user registration (includes password and confirm_password)."""
@@ -75,6 +100,21 @@ class UserLogin(BaseModel):
     """Schema for user login (by email or matric/faculty ID)."""
     email_or_matric: str = Field(..., min_length=1)
     password: str = Field(...)
+
+class UserProfileUpdate(BaseModel):
+    """Schema for partial user profile updates (PATCH operations)."""
+    name: Optional[str] = Field(None, min_length=1)
+    email: Optional[EmailStr] = None
+    matric_or_faculty_id: Optional[str] = Field(None, pattern=r"^\d{9}$")
+    department: Optional[DepartmentEnum] = None
+    bio: Optional[str] = Field(None, max_length=500)
+    phone_number: Optional[str] = Field(None, pattern=r"^\+?[\d\s\-\(\)]+$")
+    linkedin_url: Optional[str] = None
+    google_scholar_url: Optional[str] = None
+    research_gate_url: Optional[str] = None
+    academic_level: Optional[str] = None
+    graduation_year: Optional[int] = Field(None, ge=1900)
+    profile_picture_url: Optional[str] = None
 
 class UserResponse(UserBase):
     """Schema for user response (includes id, status, role, onboarding, timestamps)."""

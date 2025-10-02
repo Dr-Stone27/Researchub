@@ -10,8 +10,8 @@ from app.firebase_utils import upload_file_to_firebase
 from app.auth import verify_access_token
 from app.utils import log_user_activity, parse_tag_ids  # For user activity logging
 from sqlalchemy.orm import selectinload
-from enum import Enum
-from typing import Dict
+# from enum import Enum
+# from typing import Dict
 import uuid
 
 router = APIRouter()
